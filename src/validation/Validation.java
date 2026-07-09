@@ -1,5 +1,8 @@
 package validation;
 
+import java.time.DateTimeException;
+import java.time.LocalDate;
+
 /**
  * Provides static validation utilities for the Personal Finance Manager (PFM)
  * application.
@@ -7,9 +10,6 @@ package validation;
  * @author Tasfia Rahman
  * @author David Guanga
  */
-
-import java.time.DateTimeException;
-import java.time.LocalDate;
 
 public class Validation
 {

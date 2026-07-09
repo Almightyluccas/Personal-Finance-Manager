@@ -93,7 +93,7 @@ public class ReportFormatter {
      * @param category category name
      * @param total yearly total
      * @return formatted category line
-     * </p>
+     * 
      */
     public String formatCategoryData(String category, double total) {
 

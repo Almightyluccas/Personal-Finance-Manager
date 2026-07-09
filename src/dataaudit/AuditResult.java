@@ -1,3 +1,5 @@
+package dataaudit;
+
 /**
  * Stores and displays audit results.
  *

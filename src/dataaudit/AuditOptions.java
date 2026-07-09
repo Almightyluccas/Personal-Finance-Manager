@@ -1,3 +1,5 @@
+package dataaudit;
+
 /**
  * Manages audit settings selected by the user.
  *

@@ -96,10 +96,9 @@ import java.util.Scanner;
 		// Upon hashing the password witt the same hasing algorithm, it must match the hashed password read from file.
 		//
 		// postconditions: The user can go to the next page set by integration to access there audits n stuff
-		if (!AccountFileManager.accountExists(username)) {
-		    return false;
-		}
-
+		
+		if (!AccountFileManager.accountExists(username))
+			return false;
 		Account account = (Account) AccountFileManager.loadAccount(username);
 
 		String hashedInput = hashPassword(password);
@@ -130,7 +129,7 @@ import java.util.Scanner;
 			return true;
 		}
 		catch(Exception e) {
-			System.err.println("Error during logout process: " + e.getMessage());
+			System.err.println("Error during logout process: "+e.getMessage());
 			return false;
 		}
 	}
@@ -140,28 +139,28 @@ import java.util.Scanner;
 	 * their password if they answered correctly
 	 * @author Harmony
 	 */
+	
 	public static void forgotPassword() {
 		// requirements: The prompt requesting the user to answer their secret question
 		// must be called. Their answer must be correct.
 		// postcondition: The user is prompted to change their password.
 		
 		Scanner scanner = new Scanner(System.in);
-		
+
 		System.out.print("Enter your username: ");
 		String username = scanner.nextLine();
 		
 		if (!AccountFileManager.accountExists(username)) {
 			System.err.print("Error: No such user exist with name " + username + ".");
-			scanner.close();
 			return;
 		}
 
 		Account account = (Account) AccountFileManager.loadAccount(username);
-		if (account == null) {
+		
+		/*if (account == null) {
 		    System.out.println("No account found with that username.");
-		    scanner.close();
-		    return;
-		}
+		    return;*/
+		
 
 		System.out.println(account.getSecretQuestion());
 		System.out.print("Enter your answer: ");
@@ -173,7 +172,7 @@ import java.util.Scanner;
 		    changePassword(newPassword, account);
 		    System.out.println("Password updated successfully.");
 		} else {
-		    System.out.println("Incorrect answer. Password reset denied.");
+			System.out.println("Incorrect answer. Password reset denied.");
 		}
 		scanner.close();
 	}
@@ -184,6 +183,7 @@ import java.util.Scanner;
 	 * their username if they answered correctly
 	 * @author Dwann
 	 */
+	
 	public static void forgotUsername() {
 		// requirements: The user must correctly answer their secret question.
 		// postcondition: The user is prompted to change their username.

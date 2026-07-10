@@ -59,8 +59,8 @@ public class AuditResult {
 	 */
 	public void printResults() {
 		System.out.println("=== Audit Results ===");
-		printSection("duplicate transactions", duplicates);
-		printSection("anomalous transactions", anomalies);
+		printSection("Duplicate", duplicates);
+		printSection("Anomalous", anomalies);
 		System.out.println("Total findings: " + (duplicates.size() + anomalies.size()));
 	}
 

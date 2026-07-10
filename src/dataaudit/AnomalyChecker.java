@@ -44,9 +44,10 @@ public class AnomalyChecker {
      *
      * @param transactions the list of transactions to analyze,
      * where each entry is a String array of date, category, and amount. 
+     * @param result object that stores anomaly findings
      * @author Syed Karim
      */
-    public void detectAnomalies(ArrayList<String[]> transactions) {
+    public void detectAnomalies(ArrayList<String[]> transactions, AuditResult result) {
         ArrayList<String> excluded = options.getExcludedCategories();
  
         // Group transactions by category
@@ -79,12 +80,10 @@ public class AnomalyChecker {
             double average = calculateAverageAmount(amounts);
  
             if (isAnomalous(amount, average)) {
-                System.out.println("ANOMALY DETECTED:");
-                System.out.println("  Date:     " + transaction[0]);
-                System.out.println("  Category: " + category);
-                System.out.println("  Amount:   $" + transaction[2]);
-                System.out.println("  Average:  $" + String.format("%.2f", average));
-                anomalyFound = true;
+            	if (isAnomalous(amount, average)) {
+            	    result.addAnomaly(transaction);
+            	    anomalyFound = true;
+            	}
             }
         }
  

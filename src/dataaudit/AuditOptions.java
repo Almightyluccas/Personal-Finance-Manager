@@ -64,7 +64,7 @@ public class AuditOptions {
 		} else {
 			System.out.println("Excluded categories:");
 			for (String category : excludedCategories) {
-				System.out.println(" -" + category);
+				System.out.println("- " + category);
 			}
 		}
 	}

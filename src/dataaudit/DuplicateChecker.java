@@ -21,9 +21,10 @@ public class DuplicateChecker {
      * @param dates transaction dates
      * @param categories transaction categories
      * @param amounts transaction amounts
+     * @param result object that stores duplicate findings
      * @author Muhaymen Dhali
      */
-    public void detectDuplicates(String[] dates, String[] categories, int[] amounts) {
+    public void detectDuplicates(String[] dates, String[] categories, int[] amounts, AuditResult result) {
     	 boolean duplicateFound = false;
 
          System.out.println("Checking for duplicate transactions...");
@@ -32,9 +33,12 @@ public class DuplicateChecker {
              for (int j = i + 1; j < dates.length; j++) {
                  if (isDuplicate(dates[i], categories[i], amounts[i],
                          dates[j], categories[j], amounts[j])) {
-
-                     System.out.println("Duplicate found:");
-                     System.out.println(dates[i] + ", " + categories[i] + ", " + amounts[i]);
+                	 String[] duplicate = {
+                	            dates[i],
+                	            categories[i],
+                	            String.valueOf(amounts[i])
+                	    };
+                	 result.addDuplicate(duplicate);
                      duplicateFound = true;
                  }
              }

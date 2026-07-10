@@ -1,4 +1,7 @@
 package accounts;
+package accounts;
+//test commit - verifying setup
+...
 
 /**
  * class that packages all the data for a user Account

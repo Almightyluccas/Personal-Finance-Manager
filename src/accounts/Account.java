@@ -1,7 +1,9 @@
 package accounts;
 package accounts;
-//test commit - verifying setup
+//test commit - view changes verifying setup to account.java file;
+//test
 ...
+
 
 /**
  * class that packages all the data for a user Account

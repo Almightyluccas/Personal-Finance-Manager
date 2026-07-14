@@ -2,6 +2,8 @@ package accounts;
 import validation.Validation;
 import storage.AccountFileManager;
 import java.util.Scanner;
+import java.security.MessageDigest;
+import java.security.NoSuchAlgorithmException;
 
 /**
  * Class that provides basic operations for an Account.
@@ -23,6 +25,7 @@ import java.util.Scanner;
 		private SessionManager() {}
 		//current logged in user or null if no one is logged in 
 		private static Account currentUser;
+		//flag for user if authenticated
 		private static boolean isAuthenticated;
 		/**
 		 * gets current logged in user
@@ -122,8 +125,17 @@ import java.util.Scanner;
 		// the user will return to the login page.
 		try {
 			System.out.println("Logging out user..........");
-			//Account currentUser = SessionManager.getCurrentUser(); this isnt used, so Im commenting it for now.
-			//What would be here is saving the current userdata to a CSV file using the Storage team;s methods through AccountFileManager.saveAccount()
+			// save the current user data before logging out
+			Account currentUser = SessionManager.getCurrentUser();
+			if (currentUser != null){
+				try{
+					AccountFileManager.saveAccount(currentUser);
+					System.out.println("Account saved for "+ currentUser.getUsername());
+				}
+				catch (Exception e){
+					System.err.println("Coudn't save the account: "+ e.getMessage());
+				}
+			}
 			SessionManager.clearSession();
 			System.out.println("Returning to login screen...");
 			return true;
@@ -278,10 +290,25 @@ import java.util.Scanner;
 	 */
 	private static String hashPassword(String password) {
 		// postcondition: the password is hashed.
-		// used java builtin hashCode and convert to hex
+		// hashing the password using SHA-256
 		if (password == null || password.isEmpty()) {
 			return null;
 		}
-		return Integer.toHexString(password.hashCode());
+		try{
+			//Use SHA-256 hash algorithm
+			MessageDigest hasher = MessageDigest.getInstance("SHA-256");
+			byte[] hashByte = hasher.digest(password.getBytes());
+			StringBuilder hexString = new StringBuilder();
+			for (byte b : hashByte){
+				String hex = String.format("%02x", b);
+				hexString.append(hex);
+			}
+			return hexString.toString();
+		}
+		catch (NoSuchAlgorithmException e){
+			System.err.println("hashing algorithm not found! "+ e.getMessage());
+			return null;
+		}
+			
 	}
 }

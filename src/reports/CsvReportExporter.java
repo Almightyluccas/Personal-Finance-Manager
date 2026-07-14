@@ -3,6 +3,11 @@ package reports;
 import java.io.BufferedWriter;
 import java.io.FileWriter;
 import java.io.IOException;
+import java.util.HashMap;
+import java.util.Map;
+
+import storage.Budget;
+import storage.Transaction;
 
 /**
  * Exports financial reports to CSV files for the Personal Finance Manager
@@ -33,160 +38,210 @@ public class CsvReportExporter {
     /**
      * Exports the annual financial report to a CSV file.
      *
-     * <p>
-     * The exported report contains yearly income, expenses,
-     * category totals, and overall budget performance.
-     * </p>
+     * @param budget the budget to export
      */
-    public void exportAnnualReport() {
+    public void exportAnnualReport(Budget budget) {
 
-        // TODO: Replace this placeholder once ReportManager provides real annual data.
-        String fileName = "annual_report_placeholder.csv";
+        if (budget == null) {
+            System.out.println("No budget data available.");
+            return;
+        }
 
-        // For now, write simple sample rows so classmates can test CSV output.
-        String[] csvLines = {
-            "Section,Description,Amount",
-            "Income,Total Income,52000.00",
-            "Expense,Total Expenses,39750.00",
-            "Savings,Net Savings,12250.00",
-            "Budget Result,Surplus,12250.00"
-        };
+        String fileName = "annual_report_" + budget.getYear() + ".csv";
 
-        writeLinesToCsv(fileName, csvLines);
-
-    }
-
-    /**
-     * Exports a monthly financial summary to a CSV file.
-     *
-     * <p>
-     * The exported report contains monthly income,
-     * expenses, and net balance information.
-     * </p>
-     */
-    public void exportMonthlySummary() {
-
-        // TODO: Replace this placeholder once Storage provides transactions by month.
-        String fileName = "monthly_summary_placeholder.csv";
-
-        // The sample values demonstrate the structure of a future monthly summary export.
-        String[] csvLines = {
-            "Month,Income,Expenses,Net Balance",
-            "January 2026,4250.00,3180.00,1070.00"
-        };
-
-        writeLinesToCsv(fileName, csvLines);
-
-    }
-
-    /**
-     * Exports yearly category totals to a CSV file.
-     *
-     * <p>
-     * The exported report lists totals for each
-     * income and expense category.
-     * </p>
-     */
-    public void exportCategoryTotals() {
-
-        // TODO: Replace this placeholder once category totals are calculated automatically.
-        String fileName = "category_totals_placeholder.csv";
-
-        // Future implementation should retrieve formatted data from the reports module.
-        String[] csvLines = {
-            "Category,Type,Total",
-            "Paycheck,Income,48000.00",
-            "Freelance,Income,4000.00",
-            "Housing,Expense,18000.00",
-            "Food,Expense,6200.00",
-            "Utilities,Expense,2400.00",
-            "Transportation,Expense,3150.00"
-        };
-
-        writeLinesToCsv(fileName, csvLines);
-
-    }
-
-    /**
-     * Exports the overall budget performance summary to a CSV file.
-     *
-     * <p>
-     * The exported report summarizes the user's
-     * financial performance for the selected year.
-     * </p>
-     */
-    public void exportBudgetSummary() {
-
-        // TODO: Replace this placeholder once the budget module provides actual goals.
-        String fileName = "budget_summary_placeholder.csv";
-
-        // These rows make the export useful for testing before full project integration.
-        String[] csvLines = {
-            "Metric,Amount,Notes",
-            "Planned Annual Budget,42000.00,Sample target budget",
-            "Actual Annual Spending,39750.00,Sample spending total",
-            "Difference,2250.00,Under budget"
-        };
-
-        writeLinesToCsv(fileName, csvLines);
-
-    }
-
-    /**
-     * Creates a new CSV file for report output.
-     *
-     * <p>
-     * Creates the destination file that will store
-     * the exported report data.
-     * </p>
-     */
-    public void createCsvFile() {
-
-        // TODO: Replace this default file with a user-selected report destination later.
-        String fileName = "pfm_report_placeholder.csv";
-
-        // Creating the writer also creates the file if it does not already exist.
         try (BufferedWriter writer = new BufferedWriter(new FileWriter(fileName))) {
 
-            // This small header makes it clear that the file was created successfully.
-            writer.write("Report,Status");
-            writer.newLine();
-            writer.write("Placeholder Report,Created");
+            writer.write("Date,Category,Amount");
             writer.newLine();
 
-            // A console message helps beginners see where the file was written.
-            System.out.println("Created CSV file: " + fileName);
+            for (Transaction transaction : budget.getTransactions()) {
 
-        } catch (IOException exception) {
+                writer.write(transaction.date() + ","
+                        + transaction.category() + ","
+                        + transaction.amount());
 
-            // For now, print the message instead of throwing a custom project exception.
-            // TODO: Replace this with the team's validation/error handling approach.
-            System.out.println("Unable to create CSV file: " + exception.getMessage());
+                writer.newLine();
+            }
+
+            System.out.println("Annual report exported to " + fileName);
+
+        } catch (IOException e) {
+            System.out.println("Error exporting annual report: " + e.getMessage());
+        }
+    }
+
+    /**
+     * Exports a monthly summary.
+     *
+     * @param budget the budget
+     * @param month the month (1-12)
+     */
+    public void exportMonthlySummary(Budget budget, int month) {
+
+        if (budget == null) {
+            System.out.println("No budget data available.");
+            return;
+        }
+
+        String fileName = "monthly_summary_" + month + ".csv";
+
+        try (BufferedWriter writer = new BufferedWriter(new FileWriter(fileName))) {
+
+            writer.write("Date,Category,Amount");
+            writer.newLine();
+
+            for (Transaction transaction : budget.getTransactionsByMonth(month)) {
+
+                writer.write(transaction.date() + ","
+                        + transaction.category() + ","
+                        + transaction.amount());
+
+                writer.newLine();
+            }
+
+            System.out.println("Monthly report exported to " + fileName);
+
+        } catch (IOException e) {
+            System.out.println("Error exporting monthly report: " + e.getMessage());
+        }
+
+    }
+
+    /**
+     * Exports totals grouped by category.
+     *
+     * @param budget the budget
+     */
+    public void exportCategoryTotals(Budget budget) {
+
+        if (budget == null) {
+            System.out.println("No budget data available.");
+            return;
+        }
+
+        Map<String, Double> totals = new HashMap<>();
+
+        for (Transaction transaction : budget.getTransactions()) {
+
+            totals.put(
+                    transaction.category(),
+                    totals.getOrDefault(transaction.category(), 0.0)
+                            + transaction.amount());
+
+        }
+
+        String fileName = "category_totals.csv";
+
+        try (BufferedWriter writer = new BufferedWriter(new FileWriter(fileName))) {
+
+            writer.write("Category,Total");
+            writer.newLine();
+
+            for (String category : totals.keySet()) {
+
+                writer.write(category + "," + totals.get(category));
+                writer.newLine();
+
+            }
+
+            System.out.println("Category totals exported.");
+
+        } catch (IOException e) {
+
+            System.out.println("Error exporting category totals: " + e.getMessage());
 
         }
 
     }
 
     /**
-     * Writes formatted report data to the CSV file.
+     * Exports the budget summary.
      *
-     * <p>
-     * Handles writing report content into the
-     * output file in CSV format.
-     * </p>
+     * @param budget the budget
      */
-    public void writeReportData() {
+    public void exportBudgetSummary(Budget budget) {
 
-        // TODO: Replace this placeholder once ReportManager chooses which data to export.
-        String fileName = "pfm_report_data_placeholder.csv";
+        if (budget == null) {
+            System.out.println("No budget data available.");
+            return;
+        }
 
-        // This generic data lets the method be called directly during early testing.
-        String[] csvLines = {
-            "Report Name,Generated By,Status",
-            "Sample Finance Report,CsvReportExporter,Placeholder data written"
-        };
+        double balance = 0;
 
-        writeLinesToCsv(fileName, csvLines);
+        for (Transaction transaction : budget.getTransactions()) {
+
+            balance += transaction.amount();
+
+        }
+
+        String fileName = "budget_summary.csv";
+
+        try (BufferedWriter writer = new BufferedWriter(new FileWriter(fileName))) {
+
+            writer.write("Budget Year," + budget.getYear());
+            writer.newLine();
+            writer.write("Overall Balance," + balance);
+            writer.newLine();
+
+            if (balance >= 0) {
+                writer.write("Status,Surplus");
+            } else {
+                writer.write("Status,Deficit");
+            }
+
+            writer.newLine();
+
+            System.out.println("Budget summary exported.");
+
+        } catch (IOException e) {
+
+            System.out.println("Error exporting budget summary: " + e.getMessage());
+
+        }
+
+    }
+
+    /**
+     * Creates an empty CSV file.
+     *
+     * @param fileName the file name
+     */
+    public void createCsvFile(String fileName) {
+
+        try (BufferedWriter writer = new BufferedWriter(new FileWriter(fileName))) {
+
+            writer.write("");
+
+        } catch (IOException e) {
+
+            System.out.println("Unable to create file: " + e.getMessage());
+
+        }
+
+    }
+
+    /**
+     * Writes report data to a CSV file.
+     *
+     * @param fileName the output file
+     * @param rows the rows to write
+     */
+    public void writeReportData(String fileName, String[] rows) {
+
+        try (BufferedWriter writer = new BufferedWriter(new FileWriter(fileName))) {
+
+            for (String row : rows) {
+
+                writer.write(row);
+                writer.newLine();
+
+            }
+
+        } catch (IOException e) {
+
+            System.out.println("Unable to write report: " + e.getMessage());
+
+        }
 
     }
 

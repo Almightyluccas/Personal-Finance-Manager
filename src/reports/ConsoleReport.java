@@ -1,178 +1,176 @@
 package reports;
 
+import java.util.HashMap;
+import java.util.List;
+import java.util.Map;
+
 import storage.Budget;
 import storage.Transaction;
 
-import java.util.List;
-
 /**
- * Displays financial reports to the console for the Personal Finance Manager
- * (PFM) application.
+ * Displays financial reports to the console for the Personal Finance Manager.
  *
  * <p>
  * This class is responsible only for displaying report information.
- * Calculations should be performed by {@code ReportManager}. Budget data is
- * supplied by the Storage module.
+ * Budget data is supplied by the ReportManager after being loaded
+ * from the Storage module.
  * </p>
  *
  * @author Alyssa Johnson
- * @version 1.1
+ * @version 1.0
  * @since 1.0
  */
 public class ConsoleReport {
 
     /**
-     * Constructs a new ConsoleReport object.
+     * Creates a new ConsoleReport.
      */
     public ConsoleReport() {
-        // No initialization currently required.
     }
 
     /**
-     * Prints an annual report using budget data supplied by the Storage module.
+     * Prints an annual financial report.
      *
      * @param budget the budget to display
      */
     public void printAnnualReport(Budget budget) {
 
-        printReportHeader();
+        printReportHeader("ANNUAL FINANCIAL REPORT");
 
         if (budget == null) {
             System.out.println("No budget data available.");
             return;
         }
 
-        System.out.println("Year: " + budget.getYear());
+        double income = 0;
+        double expenses = 0;
 
-        List<Transaction> transactions = budget.getTransactions();
+        for (Transaction transaction : budget.getTransactions()) {
 
-        if (transactions == null || transactions.isEmpty()) {
-            System.out.println("No transactions available.");
-            return;
+            if (transaction.amount() >= 0) {
+                income += transaction.amount();
+            } else {
+                expenses += Math.abs(transaction.amount());
+            }
+
         }
 
-        System.out.println("Number of Transactions: " + transactions.size());
-
-        // TODO:
-        // ReportManager should calculate:
-        // - Total Income
-        // - Total Expenses
-        // - Net Savings
-        // - Budget Performance
-        //
-        // ConsoleReport should ONLY display those values.
-
-        for (Transaction transaction : transactions) {
-            System.out.println(transaction);
-        }
+        System.out.printf("Year: %d%n", budget.getYear());
+        System.out.printf("Total Income: $%.2f%n", income);
+        System.out.printf("Total Expenses: $%.2f%n", expenses);
+        System.out.printf("Net Balance: $%.2f%n", income - expenses);
     }
 
     /**
      * Prints a monthly summary.
      *
-     * @param budget budget to display
-     * @param month month (1-12)
+     * @param budget the budget
+     * @param month the month (1-12)
      */
     public void printMonthlySummary(Budget budget, int month) {
 
-        printReportHeader();
+        printReportHeader("MONTHLY SUMMARY");
 
         if (budget == null) {
-            System.out.println("No budget loaded.");
+            System.out.println("No budget data available.");
             return;
         }
 
-        List<Transaction> monthlyTransactions =
-                budget.getTransactionsByMonth(month);
+        List<Transaction> transactions = budget.getTransactionsByMonth(month);
 
-        if (monthlyTransactions == null || monthlyTransactions.isEmpty()) {
-            System.out.println("No transactions found for month " + month + ".");
-            return;
+        double income = 0;
+        double expenses = 0;
+
+        for (Transaction transaction : transactions) {
+
+            if (transaction.amount() >= 0) {
+                income += transaction.amount();
+            } else {
+                expenses += Math.abs(transaction.amount());
+            }
+
         }
 
-        System.out.println("Monthly Summary");
         System.out.println("Month: " + month);
-        System.out.println();
-
-        for (Transaction transaction : monthlyTransactions) {
-            System.out.println(transaction);
-        }
-
-        // TODO:
-        // ReportManager will calculate monthly totals before
-        // passing them to this class.
+        System.out.printf("Income: $%.2f%n", income);
+        System.out.printf("Expenses: $%.2f%n", expenses);
+        System.out.printf("Net Balance: $%.2f%n", income - expenses);
     }
 
     /**
-     * Prints yearly totals for a category.
+     * Prints yearly category totals.
      *
-     * @param budget budget to display
-     * @param category category to display
+     * @param budget the budget
      */
-    public void printCategoryTotals(Budget budget, String category) {
+    public void printCategoryTotals(Budget budget) {
 
-        printReportHeader();
+        printReportHeader("CATEGORY TOTALS");
 
         if (budget == null) {
-            System.out.println("No budget loaded.");
+            System.out.println("No budget data available.");
             return;
         }
 
-        List<Transaction> categoryTransactions =
-                budget.getTransactionsByCategory(category);
+        Map<String, Double> totals = new HashMap<>();
 
-        if (categoryTransactions == null || categoryTransactions.isEmpty()) {
-            System.out.println("No transactions found for category: " + category);
-            return;
+        for (Transaction transaction : budget.getTransactions()) {
+
+            totals.put(
+                transaction.category(),
+                totals.getOrDefault(transaction.category(), 0.0)
+                        + transaction.amount());
+
         }
 
-        System.out.println("Category: " + category);
-        System.out.println();
-
-        for (Transaction transaction : categoryTransactions) {
-            System.out.println(transaction);
+        for (String category : totals.keySet()) {
+            System.out.printf("%-20s $%.2f%n",
+                    category,
+                    totals.get(category));
         }
-
-        // TODO:
-        // ReportManager should calculate the yearly total for
-        // this category before displaying it.
     }
 
     /**
-     * Prints the budget summary.
+     * Prints a simple budget summary.
      *
-     * @param budget budget to display
+     * @param budget the budget
      */
     public void printBudgetSummary(Budget budget) {
 
-        printReportHeader();
+        printReportHeader("BUDGET SUMMARY");
 
         if (budget == null) {
-            System.out.println("No budget available.");
+            System.out.println("No budget data available.");
             return;
         }
 
-        System.out.println("Budget Summary");
-        System.out.println("Year: " + budget.getYear());
+        double balance = 0;
 
-        // TODO:
-        // Storage currently provides Budget and Transactions.
-        // ReportManager should calculate:
-        // - Total Income
-        // - Total Expenses
-        // - Surplus / Deficit
-        // before calling this method.
+        for (Transaction transaction : budget.getTransactions()) {
+            balance += transaction.amount();
+        }
+
+        System.out.printf("Overall Balance: $%.2f%n", balance);
+
+        if (balance >= 0) {
+            System.out.println("Status: Surplus");
+        } else {
+            System.out.println("Status: Deficit");
+        }
     }
 
     /**
      * Prints a standard report header.
+     *
+     * @param title the report title
      */
-    public void printReportHeader() {
+    public void printReportHeader(String title) {
 
         System.out.println();
-        System.out.println("========================================");
-        System.out.println("      Personal Finance Manager");
-        System.out.println("========================================");
-        System.out.println();
+        System.out.println("==========================================");
+        System.out.println(" Personal Finance Manager");
+        System.out.println(title);
+        System.out.println("==========================================");
+
     }
+
 }

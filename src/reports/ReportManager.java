@@ -1,5 +1,7 @@
 package reports;
 
+import storage.Budget;
+
 /**
  * Coordinates the generation of financial reports for the Personal Finance
  * Manager (PFM) application. This class acts as the main controller for
@@ -36,22 +38,26 @@ public class ReportManager {
      *
      * @param type report type
      */
-    public void generateReport(ReportType type) {
+    public void generateReport(
+        ReportType type,
+        Budget budget,
+        OutputType output,
+        int month) {
         switch (type) {
             case ANNUAL:
-                consoleReport.printAnnualReport();
+                consoleReport.printAnnualReport(budget);
                 break;
 
             case MONTHLY:
-                consoleReport.printMonthlySummary();
+                consoleReport.printMonthlySummary(budget, month);
                 break;
 
             case CATEGORY_TOTALS:
-                consoleReport.printCategoryTotals();
+                consoleReport.printCategoryTotals(budget);
                 break;
 
             case BUDGET_SUMMARY:
-                consoleReport.printBudgetSummary();
+                consoleReport.printBudgetSummary(budget);
                 break;
             default:
                 throw new IllegalArgumentException("Unknown report type.");

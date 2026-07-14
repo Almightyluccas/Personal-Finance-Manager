@@ -118,7 +118,7 @@ public class ReportFormatter {
         if(balance > 0){
             status = "Surplus";}
         else if (balance < 0){
-            status = "Defecit";}
+            status = "Deficit";}
         else{
             status = "Balanced";
         }

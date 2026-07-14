@@ -1,5 +1,6 @@
 package reports;
 
+import integration.MenuUtil;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
@@ -17,7 +18,7 @@ import storage.Transaction;
  * </p>
  *
  * @author Alyssa Johnson
- * @version 1.0
+ * @version 1.2
  * @since 1.0
  */
 public class ConsoleReport {
@@ -35,7 +36,7 @@ public class ConsoleReport {
      */
     public void printAnnualReport(Budget budget) {
 
-        printReportHeader("ANNUAL FINANCIAL REPORT");
+        MenuUtil.printTitle("Annual Financial Report");
 
         if (budget == null) {
             System.out.println("No budget data available.");
@@ -45,6 +46,7 @@ public class ConsoleReport {
         double income = 0;
         double expenses = 0;
 
+        // Calculate yearly income and expenses.
         for (Transaction transaction : budget.getTransactions()) {
 
             if (transaction.amount() >= 0) {
@@ -56,9 +58,9 @@ public class ConsoleReport {
         }
 
         System.out.printf("Year: %d%n", budget.getYear());
-        System.out.printf("Total Income: $%.2f%n", income);
-        System.out.printf("Total Expenses: $%.2f%n", expenses);
-        System.out.printf("Net Balance: $%.2f%n", income - expenses);
+        System.out.printf("Total Income:      $%.2f%n", income);
+        System.out.printf("Total Expenses:    $%.2f%n", expenses);
+        System.out.printf("Net Balance:       $%.2f%n", income - expenses);
     }
 
     /**
@@ -69,7 +71,7 @@ public class ConsoleReport {
      */
     public void printMonthlySummary(Budget budget, int month) {
 
-        printReportHeader("MONTHLY SUMMARY");
+        MenuUtil.printTitle("Monthly Summary");
 
         if (budget == null) {
             System.out.println("No budget data available.");
@@ -81,6 +83,7 @@ public class ConsoleReport {
         double income = 0;
         double expenses = 0;
 
+        // Calculate totals for the selected month.
         for (Transaction transaction : transactions) {
 
             if (transaction.amount() >= 0) {
@@ -91,10 +94,11 @@ public class ConsoleReport {
 
         }
 
+        System.out.println("Year: " + budget.getYear());
         System.out.println("Month: " + month);
-        System.out.printf("Income: $%.2f%n", income);
-        System.out.printf("Expenses: $%.2f%n", expenses);
-        System.out.printf("Net Balance: $%.2f%n", income - expenses);
+        System.out.printf("Income:            $%.2f%n", income);
+        System.out.printf("Expenses:          $%.2f%n", expenses);
+        System.out.printf("Net Balance:       $%.2f%n", income - expenses);
     }
 
     /**
@@ -104,7 +108,7 @@ public class ConsoleReport {
      */
     public void printCategoryTotals(Budget budget) {
 
-        printReportHeader("CATEGORY TOTALS");
+        MenuUtil.printTitle("Category Totals");
 
         if (budget == null) {
             System.out.println("No budget data available.");
@@ -113,19 +117,25 @@ public class ConsoleReport {
 
         Map<String, Double> totals = new HashMap<>();
 
+        // Add together all transaction amounts for each category.
         for (Transaction transaction : budget.getTransactions()) {
 
             totals.put(
-                transaction.category(),
-                totals.getOrDefault(transaction.category(), 0.0)
-                        + transaction.amount());
+                    transaction.category(),
+                    totals.getOrDefault(transaction.category(), 0.0)
+                            + transaction.amount());
 
         }
 
-        for (String category : totals.keySet()) {
-            System.out.printf("%-20s $%.2f%n",
-                    category,
-                    totals.get(category));
+        System.out.printf("%-20s %12s%n", "Category", "Total");
+        System.out.println("----------------------------------------");
+
+        for (Map.Entry<String, Double> entry : totals.entrySet()) {
+
+            System.out.printf("%-20s $%10.2f%n",
+                    entry.getKey(),
+                    entry.getValue());
+
         }
     }
 
@@ -136,7 +146,7 @@ public class ConsoleReport {
      */
     public void printBudgetSummary(Budget budget) {
 
-        printReportHeader("BUDGET SUMMARY");
+        MenuUtil.printTitle("Budget Summary");
 
         if (budget == null) {
             System.out.println("No budget data available.");
@@ -145,6 +155,7 @@ public class ConsoleReport {
 
         double balance = 0;
 
+        // Calculate the overall balance for the selected budget.
         for (Transaction transaction : budget.getTransactions()) {
             balance += transaction.amount();
         }
@@ -156,21 +167,6 @@ public class ConsoleReport {
         } else {
             System.out.println("Status: Deficit");
         }
-    }
-
-    /**
-     * Prints a standard report header.
-     *
-     * @param title the report title
-     */
-    public void printReportHeader(String title) {
-
-        System.out.println();
-        System.out.println("==========================================");
-        System.out.println(" Personal Finance Manager");
-        System.out.println(title);
-        System.out.println("==========================================");
-
     }
 
 }

@@ -1,65 +1,142 @@
 package validation;
 
+import java.io.BufferedReader;
+import java.io.IOException;
+import java.nio.charset.StandardCharsets;
+import java.nio.file.Files;
+import java.nio.file.Path;
+import java.nio.file.Paths;
+import java.time.DateTimeException;
+import java.time.LocalDate;
+import java.util.regex.Pattern;
 /**
- * Provides static validation utilities for the Personal Finance Manager (PFM)
- * application.
+ * Provides static methods for validating user input and CSV file data
+ * used by the Personal Finance Manager (PFM) application.
+ *
+ * <p>
+ * This class validates account information such as usernames,
+ * passwords, secret questions, and secret answers. It also validates
+ * CSV file names, headers, records, dates, categories, amounts, and
+ * ensures that imported financial data conforms to the application's
+ * required format.
+ * </p>
+ *
  * @author Selina Zhu
  * @author Tasfia Rahman
  * @author David Guanga
  */
 
-import java.time.DateTimeException;
-import java.time.LocalDate;
-
 public class Validation
 {
+    private static String[] validCategories;
+
+    /** Required CSV header line, per the PFM functional specification. */
+    public static final String VALID_HEADER = "Date,Category,Amount";
+
+    /** Earliest year accepted in a PFM file name. */
+    public static final int MIN_YEAR = 1900;
+
+    /** Latest year accepted in a PFM file name. */
+    public static final int MAX_YEAR = 2100;
+
+    /** Pattern for a base file name of the form YYYY.csv. */
+    private static final Pattern FILE_NAME_PATTERN =
+            Pattern.compile("^\\d{4}\\.csv$", Pattern.CASE_INSENSITIVE);
+
+    /** Unicode byte-order mark sometimes present at the start of CSV files. */
+    private static final String BOM = "﻿";
+
+
 	/**
      * Validates a user's username.
+	 * Requirements:
+	 * - Cannot be null
+	 * - Must be between 4 and 20 characters
+	 * - May contain only letters, digits, and underscores
      *
      * @param username the username entered by the user
      * @return true if the username satisfies all username requirements;
      *         otherwise false
      * @author Selina Zhu
      */
-    public static boolean isValidUsername(String username) {
-        return false;
-    }
+    public static boolean isValidUsername(String username)
+	{
+    	if (username == null)
+        	return false;
+
+    	username = username.trim();
+
+    	return username.matches("^[A-Za-z0-9_]{4,20}$");
+	}
 
     /**
      * Validates a user's password.
+	 * Requirements:
+	 * - Cannot be null
+  	 * - At least 8 characters
+ 	 * - Contains at least one uppercase letter
+ 	 * - Contains at least one lowercase letter
+ 	 * - Contains at least one digit
      *
      * @param password the password entered by the user
      * @return true if the password satisfies all password requirements;
      *         otherwise false
      * @author Selina Zhu
      */
-    public static boolean isValidPassword(String password) {
-        return false;
-    }
+    public static boolean isValidPassword(String password)
+	{
+    	if (password == null)
+        	return false;
+
+    	return password.matches(
+        	"^(?=.*[a-z])(?=.*[A-Z])(?=.*\\d).{8,}$");
+	}
 
     /**
      * Validates the user's secret question.
+	 * Requirements:
+ 	 * - Cannot be null
+ 	 * - Between 10 and 100 characters
+ 	 * - Cannot be blank
      *
      * @param secretQuestion the secret question entered by the user
      * @return true if the secret question is valid;
      *         otherwise false
      * @author Selina Zhu
      */
-    public static boolean isValidSecretQuestion(String secretQuestion) {
-        return false;
-    }
+    public static boolean isValidSecretQuestion(String secretQuestion)
+	{
+    	if (secretQuestion == null)
+        	return false;
+
+    	secretQuestion = secretQuestion.trim();
+
+    	return secretQuestion.length() >= 10
+        	&& secretQuestion.length() <= 100;
+	}
 
     /**
      * Validates the user's secret answer.
+	 * Requirements:
+ 	 * - Cannot be null
+ 	 * - Between 2 and 100 characters
+ 	 * - Cannot be blank
      *
      * @param secretAnswer the secret answer entered by the user
      * @return true if the secret answer is valid;
      *         otherwise false
      * @author Selina Zhu
      */
-    public static boolean isValidSecretAnswer(String secretAnswer) {
-        return false;
-    }
+    public static boolean isValidSecretAnswer(String secretAnswer)
+	{
+    	if (secretAnswer == null)
+        	return false;
+
+    	secretAnswer = secretAnswer.trim();
+
+    	return secretAnswer.length() >= 2
+        	&& secretAnswer.length() <= 100;
+	}
 
 	/**
      * Checks whether a file name follows the required YYYY.csv pattern.
@@ -75,7 +152,25 @@ public class Validation
      * @author Tasfia Rahman
      */
     public static boolean isValidFileName(String fileName) {
-        return false; // TODO: implement
+        if (fileName == null || fileName.trim().isEmpty()) {
+            return false;
+        }
+        Path path;
+        try {
+            path = Paths.get(fileName.trim());
+        } catch (Exception e) {
+            return false; // malformed path (e.g., illegal characters)
+        }
+        Path base = path.getFileName();
+        if (base == null) {
+            return false;
+        }
+        String baseName = base.toString();
+        if (!FILE_NAME_PATTERN.matcher(baseName).matches()) {
+            return false;
+        }
+        int year = Integer.parseInt(baseName.substring(0, 4));
+        return year >= MIN_YEAR && year <= MAX_YEAR;
     }
 
     /**
@@ -88,7 +183,20 @@ public class Validation
      * @author Tasfia Rahman
      */
     public static boolean isValidCsvFile(String fileName) {
-        return false; // TODO: implement
+        if (!isValidFileName(fileName)) {
+            return false;
+        }
+        Path path = Paths.get(fileName.trim());
+        if (!Files.isRegularFile(path) || !Files.isReadable(path)) {
+            return false;
+        }
+        try (BufferedReader reader =
+                Files.newBufferedReader(path, StandardCharsets.UTF_8)) {
+            String headerLine = reader.readLine();
+            return headerLine != null && isValidHeader(headerLine);
+        } catch (IOException e) {
+            return false;
+        }
     }
 
     /**
@@ -105,7 +213,14 @@ public class Validation
      * @author Tasfia Rahman
      */
     public static boolean isValidHeader(String headerLine) {
-        return false; // TODO: implement
+        if (headerLine == null) {
+            return false;
+        }
+        String cleaned = headerLine.trim();
+        if (cleaned.startsWith(BOM)) {
+            cleaned = cleaned.substring(1).trim();
+        }
+        return cleaned.equalsIgnoreCase(VALID_HEADER);
     }
 
     /**
@@ -123,7 +238,16 @@ public class Validation
      * @author Tasfia Rahman
      */
     public static boolean fileExistsForYear(String directory, int year) {
-        return false; // TODO: implement
+        if (directory == null || year < MIN_YEAR || year > MAX_YEAR) {
+            return false;
+        }
+        Path candidate;
+        try {
+            candidate = Paths.get(directory, year + ".csv");
+        } catch (Exception e) {
+            return false;
+        }
+        return Files.isRegularFile(candidate);
     }
 
 	/**
@@ -187,16 +311,18 @@ public class Validation
     {
     //TODO:Try to make categories its own type so that categories that are either expenses or income can be easily distinguished and
     //add to 
-        String[] validCategories = {
+        /*String[] validCategories = {
         "Compensation", "Allowance", "Investments",
         "Home", "Utilities", "Food",
         "Appearance", "Work", "Education",
         "Transportation", "Entertainment",
         "Professional Services", "Other"
         };
+        */
 
+        final int len = validCategories.length;
         boolean check = false;
-        for(int i = 0; (i < validCategories.length) && !check; i++)
+        for(int i = 0; (i < len) && !check; i++)
         {
             check = categ.equalsIgnoreCase(validCategories[i]);
         }
@@ -235,14 +361,34 @@ public class Validation
             return false;
         }
 	}
+	/**
+	 *Sets the column titles to check for in the header of the .csv file 
+	 *@param categories sets the array of valid column titles for the header of the .csv file
+     *@author David Guanga
+     * */
+	
+    public static void setValidCategories(String[] categories)
+    {
+        Validation.validCategories = categories;
+    }
 
 	/**
 	 * Checks to see if an entry in the .csv file has a valid date, category, and amount
-	 *@param take in a BudgetRecord that must be validated
-	 *@return true if the records hava a valid date format, category, and amount
-	 *@author David Guanga
-	 * */
-	public static boolean isValidRecord(){
-		return false;
+	 *@param movieRecordStr takes in a read line from the .csv file.
+	 *@param recordIndex the line number of where you are at in the .csv file
+     *@return true if the records hava a valid date format, category, and amount
+     *@author David Guanga
+     * */
+	public static boolean isValidRecord(String movieRecordStr, int recordIndex)
+    {
+        String[] recordArr = movieRecordStr.split(",");
+        String date = recordArr[0];
+        String category = recordArr[1];
+        String amount = recordArr[2];
+
+        return Validation.isValidDateFormat(date, recordIndex) 
+        && Validation.isValidAmount(amount, recordIndex) 
+        && Validation.isValidCategory(category, recordIndex);
 	}
+
 }

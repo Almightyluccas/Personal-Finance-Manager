@@ -1,5 +1,6 @@
 package storage;
 
+import java.util.ArrayList;
 import java.util.List;
 
 /**
@@ -9,6 +10,15 @@ import java.util.List;
  * @author Mohammed, Ayub, Fuad
  */
 public class Budget {
+    /**
+     * The year this budget represents.
+     */
+    private final int year;
+
+    /**
+     * The list of transactions stored in this budget.
+     */
+    private final List<Transaction> transactions;
 
     /**
      * Constructs a new, empty {@code Budget} for the specified year.
@@ -17,6 +27,8 @@ public class Budget {
      * @author Mohammed, Ayub, Fuad
      */
     public Budget(int year) {
+        this.year = year;
+        this.transactions = new ArrayList<>();
     }
 
     /**
@@ -26,7 +38,7 @@ public class Budget {
      * @author Mohammed, Ayub, Fuad
      */
     public int getYear() {
-        return 0;
+        return year;
     }
 
     /**
@@ -36,7 +48,7 @@ public class Budget {
      * @author Mohammed, Ayub, Fuad
      */
     public List<Transaction> getTransactions() {
-        return null;
+        return transactions;
     }
 
     /**
@@ -46,6 +58,9 @@ public class Budget {
      * @author Mohammed, Ayub, Fuad
      */
     public void addTransaction(Transaction transaction) {
+        if (transaction != null) {
+            transactions.add(transaction);
+        }
     }
 
     /**
@@ -56,7 +71,16 @@ public class Budget {
      * @author Mohammed, Ayub, Fuad
      */
     public List<Transaction> getTransactionsByMonth(int month) {
-        return null;
+        List<Transaction> result = new ArrayList<>();
+        if (month < 1 || month > 12) {
+            return result;
+        }
+        for(Transaction transaction : transactions) {
+            if(transaction.date().getMonthValue() == month) {
+                result.add(transaction);
+            }
+        }
+        return result;
     }
 
     /**
@@ -67,6 +91,15 @@ public class Budget {
      * @author Mohammed, Ayub, Fuad
      */
     public List<Transaction> getTransactionsByCategory(String category) {
-        return null;
+        List<Transaction> result = new ArrayList<>();
+        if(category == null || category.isBlank()) {
+            return result;
+        }
+        for(Transaction transaction : transactions) {
+            if(transaction.category().equalsIgnoreCase(category)) {
+                result.add(transaction);
+            }
+        }
+        return result;
     }
 }

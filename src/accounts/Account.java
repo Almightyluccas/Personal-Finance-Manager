@@ -1,5 +1,10 @@
 package accounts;
 
+/**
+ * class that packages all the data for a user Account
+ * holds the username, hashed password, secret question and answer
+ * @author Sakif
+ */
 public class Account {
 /**
  * username for this account
@@ -31,7 +36,6 @@ public class Account {
  * @param hashedPassword 
  * @param secretQuestion A security question for recovery
  * @param secretAnswer The answer to the security question
- * @param pathToUserInfo File path to user's info
  * @author Sakif
  */
 	public Account(String username, String hashedPassword, String secretQuestion, String secretAnswer) {

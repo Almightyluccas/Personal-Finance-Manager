@@ -1,6 +1,9 @@
 package storage;
 
+import java.io.IOException;
+import java.nio.file.Files;
 import java.nio.file.Path;
+import java.nio.file.Paths;
 
 /**
  * Provides low-level file system utility operations used throughout the
@@ -9,6 +12,14 @@ import java.nio.file.Path;
  * @author Mohammed, Ayub, Fuad
  */
 public class FileUtil {
+
+    /**
+     * The application's data directory, relative to the working
+     * directory the application is launched from. Kept consistent with
+     * the root {@link AccountFileManager} and {@link BudgetStorage}
+     * already use for their own file storage.
+     */
+    private static final Path DATA_DIRECTORY = Paths.get("data");
 
     /**
      * Constructs a new {@code FileUtil} instance.
@@ -24,19 +35,31 @@ public class FileUtil {
      *
      * @param fileName the relative file name to resolve
      * @return the resolved absolute path
+     * @throws IllegalArgumentException if {@code fileName} is null or blank
      * @author Mohammed, Ayub, Fuad
      */
     public Path resolvePath(String fileName) {
-        return null;
+        if (fileName == null || fileName.isBlank()) {
+            throw new IllegalArgumentException("File name cannot be blank.");
+        }
+
+        return DATA_DIRECTORY.resolve(fileName.trim()).toAbsolutePath().normalize();
     }
 
     /**
      * Ensures that the application's data directory exists, creating it if
      * necessary.
      *
+     * @throws IllegalStateException if the data directory could not be created
      * @author Mohammed, Ayub, Fuad
      */
     public void ensureDataDirectoryExists() {
+        try {
+            Files.createDirectories(DATA_DIRECTORY);
+        } catch (IOException e) {
+            throw new IllegalStateException(
+                    "Unable to create data directory: " + DATA_DIRECTORY, e);
+        }
     }
 
     /**
@@ -47,6 +70,6 @@ public class FileUtil {
      * @author Mohammed, Ayub, Fuad
      */
     public boolean fileExists(Path path) {
-        return false;
+        return path != null && Files.exists(path);
     }
 }

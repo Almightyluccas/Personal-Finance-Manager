@@ -65,24 +65,25 @@ public class MainOrchestrator {
         shutdownApplication();
     }
 
-    /**
-     * Runs the pre-authentication menu, handling login and registration
-     * until the user either logs in successfully or chooses to exit.
+      /**
+     * Runs the pre-authentication menu, handling login, registration, &
+     * password recovery options before the user logs into the system.
      *
      * @return false if the user chose to exit the application, true otherwise
      * @author Luccas Amorim
+     * @author Yazmyrat Aydogdiyev
      */
-    private boolean runPreAuthMenu() {
-        // TODO: add a forgot password option;
-
+  private boolean runPreAuthMenu() {
         String choice = MenuUtil.promptChoice("Personal Finance Manager",
                 "1. Login",
                 "2. Register",
+                "3. Forgot Password",
                 "0. Exit");
 
         switch (choice) {
             case "1" -> handleLogin();
             case "2" -> handleRegister();
+            case "3" -> System.out.println("Password recovery feature coming soon.");
             case "0" -> {
                 return false;
             }
@@ -90,6 +91,7 @@ public class MainOrchestrator {
         }
         return true;
     }
+
 
     /**
      * Prompts for credentials and attempts to log in via the Accounts module.
@@ -199,6 +201,7 @@ public class MainOrchestrator {
      *
      * @param option the selected menu option
      * @author Luccas Amorim
+     * @author Mohsen Kanj
      */
      void dispatchSelection(MenuOptions option) {
         // TODO: module.handleSelection() runs code owned by other teams.
@@ -206,6 +209,7 @@ public class MainOrchestrator {
         // currently propagate all the way up and crash the app. we need to wrap this
         // in a try-catch (log it, print a friendly message, and return to the
         // main menu) so one module's bug can't take down the whole program.
+        
 
         if (option == MenuOptions.EXIT) {
             return;
@@ -219,7 +223,12 @@ public class MainOrchestrator {
             return;
         }
 
-        module.handleSelection();
+        try {
+          module.handleSelection();
+      }   catch (RuntimeException e) {
+          System.err.println("Error in module '" + moduleName + "': " + e.getMessage());
+          System.err.println("Returning to main menu.");
+      }
     }
 
     /**

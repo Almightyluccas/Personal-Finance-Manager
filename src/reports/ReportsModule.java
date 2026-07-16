@@ -2,7 +2,7 @@ package reports;
 
 import integration.AppModule;
 
-import java.util.Scanner;
+import integration.MenuUtil;
 
 /**
  * Entry point for the Reports module.
@@ -25,7 +25,6 @@ public class ReportsModule implements AppModule {
      */
     private static final String MODULE_NAME = "reports";
 
-    private Scanner scanner;
     private ReportMenu reportMenu;
     private ReportManager reportManager;
 
@@ -43,7 +42,6 @@ public class ReportsModule implements AppModule {
 
     @Override
     public void initialize() {
-        scanner = new Scanner(System.in);
         reportMenu = new ReportMenu();
         reportManager = new ReportManager();
     }
@@ -53,28 +51,30 @@ public class ReportsModule implements AppModule {
         boolean running = true;
 
         while (running) {
-            printMenu();
-            String choice = scanner.nextLine().trim();
+            String choice = MenuUtil.promptChoice(
+                    "Reports Module",
+                    "1. Annual Report",
+                    "2. Monthly Summary",
+                    "3. Category Totals",
+                    "4. Budget Summary",
+                    "0. Return to Main Menu"
+            );
             switch (choice) {
 
                 case "1":
-                    System.out.println("Annual Report selected.");
-                    // Designate annual report generation to ReportManager
+                    reportManager.generateReport(ReportType.ANNUAL);
                     break;
 
                 case "2":
-                    System.out.println("Monthly Summary selected.");
-                    //Designate Monthly Summary generation to ReportManager
+                    reportManager.generateReport(ReportType.MONTHLY);
                     break;
 
                 case "3":
-                    System.out.println("Category Totals selected.");
-                    // Designate Category Totals generation to ReportManager
+                    reportManager.generateReport(ReportType.CATEGORY_TOTALS);
                     break;
 
                 case "4":
-                    System.out.println("Budget Summary selected.");
-                    // Designate Budget Summary generation to ReportManager
+                    reportManager.generateReport(ReportType.BUDGET_SUMMARY);
                     break;
 
                 case "0":
@@ -83,24 +83,10 @@ public class ReportsModule implements AppModule {
 
                 default:
                     System.out.println("Invalid option.");
+                    break;
             }
         }
     }
 
-    /**
-     * Prints the Reports submenu.
-     */
-    private void printMenu() {
-
-        System.out.println();
-        System.out.println("=== Reports Module ===");
-        System.out.println("1. Annual Report");
-        System.out.println("2. Monthly Summary");
-        System.out.println("3. Category Totals");
-        System.out.println("4. Budget Summary");
-        System.out.println("0. Return to Main Menu");
-        System.out.print("Choose an option: ");
-
-    }
 
 }

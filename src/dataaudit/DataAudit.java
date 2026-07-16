@@ -143,8 +143,7 @@ public class DataAudit implements AppModule {
      */
     @Override
     public void initialize() {
-        auditOptions.addExcludedCategory("Education");
-        auditOptions.showExcludedCategories();
+
     }
 
     /**
@@ -154,6 +153,8 @@ public class DataAudit implements AppModule {
      */
     @Override
     public void handleSelection() {
+		auditOptions.addExcludedCategory("Education");
+        auditOptions.showExcludedCategories();
         auditYear();
     }
     

@@ -59,6 +59,30 @@ public class ReportManager {
 
     }
 
+    /**
+     * Generates a report that requires a username and year.
+     *
+     * @param type     the type of report
+     * @param username the current user
+     * @param year     the selected year
+     */
+    public void generateReport(ReportType type, String username, int year) {
+        // TODO: Use username and year once Storage integration is complete.
+        generateReport(type);
+    }
+
+    /**
+     * Generates a monthly report.
+     *
+     * @param type     the report type
+     * @param username the current user
+     * @param year     selected year
+     * @param month    selected month
+     */
+    public void generateReport(ReportType type, String username, int year, int month) {
+        // TODO: Use username, year, and month once Storage integration is complete.
+        generateReport(type);
+    }
 
     /**
      * Returns the formatter used by this manager.

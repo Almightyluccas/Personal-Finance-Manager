@@ -8,6 +8,6 @@
  * <p>The Insights module is used after budget data has been loaded and
  * validated by the other PFM modules.</p>
  *
- * @author Waliur Sun
+ * @author Waliur Sun, Adrian Singh, Felix Santos
  */
 package insights;

@@ -10,7 +10,7 @@ import java.util.List;
 /**
  * Handles exporting transaction data and reports to CSV files.
  *
- * @author Mohammed, Ayub, Fuad
+ * @author Ayub
  */
 public class CsvExporter {
  
@@ -23,7 +23,7 @@ public class CsvExporter {
     /**
      * Constructs a new {@code CsvExporter} instance.
      *
-     * @author Mohammed, Ayub, Fuad
+     * @author Ayub
      */
     public CsvExporter() {
     }
@@ -34,7 +34,7 @@ public class CsvExporter {
      *
      * @param transactions the transactions to include in the report
      * @param filePath     the destination path for the CSV file
-     * @author Mohammed, Ayub, Fuad
+     * @author Ayub
      */
     public void writeReportToCsv(List<Transaction> transactions, String filePath) {
         try (BufferedWriter writer = Files.newBufferedWriter(Path.of(filePath))) {
@@ -57,7 +57,7 @@ public class CsvExporter {
      *
      * @param amount the amount to format
      * @return the formatted amount as a string
-     * @author Mohammed, Ayub, Fuad
+     * @author Ayub
      */
     private String formatAmount(double amount) {
         if (amount == Math.rint(amount)) {

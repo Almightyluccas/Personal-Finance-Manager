@@ -8,6 +8,8 @@ import java.util.Map;
  * Generates financial recommendations based on yearly budget analysis.
  *
  * @author Waliur Sun
+ * @author Adrian Singh
+ * @author Felix Santos
  */
 public class RecommendationEngine {
 
@@ -16,7 +18,8 @@ public class RecommendationEngine {
      *
      * @param netBalance positive net balance
      * @param categoryPercentages spending percentages by category
-     * @return list of recommendations
+     * @return list of surplus recommendations
+     * @author Waliur Sun
      */
     public List<String> generateSurplusRecommendations(
             int netBalance,
@@ -45,17 +48,18 @@ public class RecommendationEngine {
         for (Map.Entry<String, Double> entry
                 : categoryPercentages.entrySet()) {
 
-            int adjustment = estimateCategoryAdjustments(
-                    netBalance,
-                    entry.getValue());
+            int adjustment =
+                    estimateCategoryAdjustments(
+                            netBalance,
+                            entry.getValue());
 
             if (adjustment > 0) {
-
                 recommendations.add(
                         "You could safely increase "
                                 + entry.getKey()
                                 + " spending by approximately $"
-                                + adjustment + ".");
+                                + adjustment
+                                + ".");
             }
         }
 
@@ -66,8 +70,9 @@ public class RecommendationEngine {
      * Generates recommendations for a deficit budget.
      *
      * @param netBalance negative net balance
-     * @param categoryPercentages spending percentages
-     * @return list of recommendations
+     * @param categoryPercentages spending percentages by category
+     * @return list of deficit recommendations
+     * @author Waliur Sun
      */
     public List<String> generateDeficitRecommendations(
             int netBalance,
@@ -78,18 +83,20 @@ public class RecommendationEngine {
         List<String> recommendations = new ArrayList<>();
 
         if (netBalance >= 0) {
-
             recommendations.add(
                     "No deficit recommendations available.");
-
             return recommendations;
         }
 
-        int deficit = Math.abs(netBalance);
+        /*
+         * Convert to long first to safely handle Integer.MIN_VALUE.
+         */
+        long deficitAmount = Math.abs((long) netBalance);
 
         recommendations.add(
                 "You exceeded your income by $"
-                        + deficit + ".");
+                        + deficitAmount
+                        + ".");
 
         recommendations.add(
                 "Reduce unnecessary expenses.");
@@ -97,17 +104,18 @@ public class RecommendationEngine {
         for (Map.Entry<String, Double> entry
                 : categoryPercentages.entrySet()) {
 
-            int reduction = estimateCategoryAdjustments(
-                    deficit,
-                    entry.getValue());
+            int reduction =
+                    estimateCategoryAdjustments(
+                            deficitAmount,
+                            entry.getValue());
 
             if (reduction > 0) {
-
                 recommendations.add(
                         "Reduce "
                                 + entry.getKey()
                                 + " spending by approximately $"
-                                + reduction + ".");
+                                + reduction
+                                + ".");
             }
         }
 
@@ -117,8 +125,9 @@ public class RecommendationEngine {
     /**
      * Finds the largest expense category.
      *
-     * @param categoryPercentages category percentages
-     * @return descriptive message
+     * @param categoryPercentages spending percentages by category
+     * @return message describing the largest expense category
+     * @author Waliur Sun
      */
     public String compareSpendingPatterns(
             Map<String, Double> categoryPercentages) {
@@ -136,7 +145,6 @@ public class RecommendationEngine {
                 : categoryPercentages.entrySet()) {
 
             if (entry.getValue() > highestPercentage) {
-
                 highestPercentage = entry.getValue();
                 largestCategory = entry.getKey();
             }
@@ -150,14 +158,15 @@ public class RecommendationEngine {
     }
 
     /**
-     * Estimates category adjustment amount.
+     * Estimates an adjustment amount for one spending category.
      *
      * @param balanceAmount surplus or deficit amount
-     * @param categoryPercentage percentage of expenses
-     * @return estimated adjustment
+     * @param categoryPercentage category's percentage of total expenses
+     * @return estimated whole-dollar adjustment
+     * @author Waliur Sun
      */
     public int estimateCategoryAdjustments(
-            int balanceAmount,
+            long balanceAmount,
             double categoryPercentage) {
 
         if (balanceAmount < 0) {
@@ -165,22 +174,30 @@ public class RecommendationEngine {
                     "Balance amount cannot be negative.");
         }
 
-        if (categoryPercentage < 0) {
+        validatePercentage(
+                "Category",
+                categoryPercentage);
+
+        double adjustment =
+                balanceAmount
+                        * (categoryPercentage / 100.0);
+
+        if (adjustment > Integer.MAX_VALUE) {
             throw new IllegalArgumentException(
-                    "Category percentage cannot be negative.");
+                    "Calculated adjustment exceeds the supported range.");
         }
 
-        return (int) Math.round(
-                balanceAmount * (categoryPercentage / 100.0));
+        return (int) Math.round(adjustment);
     }
 
     /**
-     * Generates recommendations based on budget status.
+     * Generates recommendations based on the overall budget status.
      *
-     * @param status budget status
-     * @param netBalance yearly balance
-     * @param categoryPercentages expense percentages
-     * @return list of recommendations
+     * @param status overall budget status
+     * @param netBalance yearly net balance
+     * @param categoryPercentages expense percentages by category
+     * @return list of financial recommendations
+     * @author Waliur Sun
      */
     public List<String> generateRecommendations(
             BudgetStatus status,
@@ -192,40 +209,40 @@ public class RecommendationEngine {
                     "Budget status cannot be null.");
         }
 
+        validateCategoryPercentages(categoryPercentages);
+
         List<String> recommendations = new ArrayList<>();
 
         recommendations.add(
-                compareSpendingPatterns(categoryPercentages));
+                compareSpendingPatterns(
+                        categoryPercentages));
 
         switch (status) {
+            case SURPLUS -> recommendations.addAll(
+                    generateSurplusRecommendations(
+                            netBalance,
+                            categoryPercentages));
 
-            case SURPLUS:
-                recommendations.addAll(
-                        generateSurplusRecommendations(
-                                netBalance,
-                                categoryPercentages));
-                break;
+            case DEFICIT -> recommendations.addAll(
+                    generateDeficitRecommendations(
+                            netBalance,
+                            categoryPercentages));
 
-            case DEFICIT:
-                recommendations.addAll(
-                        generateDeficitRecommendations(
-                                netBalance,
-                                categoryPercentages));
-                break;
-
-            case BALANCED:
-                recommendations.add(
-                        "Your yearly budget is balanced.");
-                break;
+            case BALANCED -> recommendations.add(
+                    "Your yearly budget is balanced.");
         }
 
         return recommendations;
     }
 
     /**
-     * Validates category percentages.
+     * Validates all category names and percentage values.
      *
-     * @param categoryPercentages category percentages
+     * <p>Each category must have a nonblank name, and each percentage
+     * must be a finite number between zero and one hundred.</p>
+     *
+     * @param categoryPercentages expense percentages by category
+     * @author Waliur Sun
      */
     private void validateCategoryPercentages(
             Map<String, Double> categoryPercentages) {
@@ -233,6 +250,65 @@ public class RecommendationEngine {
         if (categoryPercentages == null) {
             throw new IllegalArgumentException(
                     "Category percentages cannot be null.");
+        }
+
+        double totalPercentage = 0.0;
+
+        for (Map.Entry<String, Double> entry
+                : categoryPercentages.entrySet()) {
+
+            String category = entry.getKey();
+            Double percentage = entry.getValue();
+
+            if (category == null || category.isBlank()) {
+                throw new IllegalArgumentException(
+                        "Category name cannot be null or blank.");
+            }
+
+            if (percentage == null) {
+                throw new IllegalArgumentException(
+                        "Percentage cannot be null for category: "
+                                + category);
+            }
+
+            validatePercentage(
+                    category,
+                    percentage);
+
+            totalPercentage += percentage;
+        }
+
+        /*
+         * A small tolerance prevents harmless floating-point
+         * rounding from rejecting values such as 100.0000001.
+         */
+        if (totalPercentage > 100.01) {
+            throw new IllegalArgumentException(
+                    "Combined category percentages cannot exceed 100%.");
+        }
+    }
+
+    /**
+     * Validates one category percentage.
+     *
+     * @param category category associated with the percentage
+     * @param percentage percentage to validate
+     * @author Waliur Sun
+     */
+    private void validatePercentage(
+            String category,
+            double percentage) {
+
+        if (!Double.isFinite(percentage)) {
+            throw new IllegalArgumentException(
+                    "Percentage must be a finite number for category: "
+                            + category);
+        }
+
+        if (percentage < 0.0 || percentage > 100.0) {
+            throw new IllegalArgumentException(
+                    "Percentage must be between 0 and 100 for category: "
+                            + category);
         }
     }
 }

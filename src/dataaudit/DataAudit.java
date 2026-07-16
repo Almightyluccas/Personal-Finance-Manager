@@ -1,6 +1,13 @@
 package dataaudit;
 import java.util.ArrayList;
+import java.util.List;
 import integration.AppModule;
+import integration.MenuUtil;
+import accounts.Account;
+import accounts.AccountService;
+import storage.Budget;
+import storage.BudgetStorage;
+import storage.Transaction;
 
 /**
  * Performs data auditing on a user's annual budget.
@@ -22,52 +29,82 @@ public class DataAudit implements AppModule {
 	}
 
 	/**
-	 * Audits one year of sample financial data.
+	 * Audits one year of the current user's stored financial data.
 	 *
 	 * @author Muhaymen Dhali
 	 */
 	public void auditYear() {
-		System.out.println("Starting annual data audit...");
-		 String[] dates = {
-	                "01/15/2026", "01/15/2026",
-	                "01/31/2026", "02/28/2026",
-	                "03/31/2026", "04/30/2026",
-	                "05/31/2026", "06/30/2026",
-	                "07/31/2026", "08/31/2026",
-	                "09/30/2026", "10/31/2026",
-	                "11/30/2026", "12/31/2026",
-	                "08/20/2026"
-	        };
+	    Account currentUser = AccountService.SessionManager.getCurrentUser();
 
-	        String[] categories = {
-	                "Food", "Food",
-	                "Compensation", "Compensation",
-	                "Compensation", "Compensation",
-	                "Compensation", "Compensation",
-	                "Compensation", "Compensation",
-	                "Compensation", "Compensation",
-	                "Compensation", "Compensation",
-	                "Education"
-	        };
+	    if (currentUser == null) {
+	        System.out.println("You must be logged in to run Data Audit.");
+	        return;
+	    }
 
-	        int[] amounts = {
-	                -25, -25,
-	                10000, 10000,
-	                10000, 10000,
-	                10000, 10000,
-	                10000, 10000,
-	                10000, 10000,
-	                10000, 100000,
-	                -3000
-	        };
-	        
-	        ArrayList<String[]> transactions =
-	                createTransactionList(dates, categories, amounts);
-		
-	        AuditResult result = new AuditResult();
-	        findDuplicates(dates, categories, amounts, result);
-	        findAnomalies(transactions, result);
-	        result.printResults();
+	    String username = currentUser.getUsername();
+	    BudgetStorage storage = new BudgetStorage();
+
+	    String yearInput = MenuUtil.promptString(
+	            "Enter the budget year to audit");
+
+	    int year;
+
+	    try {
+	        year = Integer.parseInt(yearInput);
+	    } catch (NumberFormatException e) {
+	        System.out.println("Invalid year. Please enter a number.");
+	        return;
+	    }
+
+	    if (!storage.yearExists(username, year)) {
+	        System.out.println("No budget found for " + year + ".");
+	        return;
+	    }
+
+	    Budget budget = storage.readBudget(username, year);
+
+	    if (budget == null) {
+	        System.out.println("The budget for " + year
+	                + " could not be loaded.");
+	        return;
+	    }
+
+	    List<Transaction> storedTransactions =
+	            budget.getTransactions();
+
+	    if (storedTransactions.isEmpty()) {
+	        System.out.println("The budget for " + year
+	                + " contains no transactions.");
+	        return;
+	    }
+
+	    System.out.println("Starting data audit for "
+	            + username + "'s " + year + " budget...");
+
+	    String[] dates =
+	            new String[storedTransactions.size()];
+	    String[] categories =
+	            new String[storedTransactions.size()];
+	    int[] amounts =
+	            new int[storedTransactions.size()];
+
+	    for (int i = 0; i < storedTransactions.size(); i++) {
+	        Transaction transaction = storedTransactions.get(i);
+
+	        dates[i] = transaction.date().toString();
+	        categories[i] = transaction.category();
+	        amounts[i] = (int) Math.round(transaction.amount());
+	    }
+
+	    ArrayList<String[]> auditTransactions =
+	            createTransactionList(dates, categories, amounts);
+
+	    AuditResult result = new AuditResult();
+
+	    findDuplicates(dates, categories, amounts, result);
+	    findAnomalies(auditTransactions, result);
+
+	    result.printResults();
 	}
 	
 	 /**
@@ -153,8 +190,6 @@ public class DataAudit implements AppModule {
      */
     @Override
     public void handleSelection() {
-		auditOptions.addExcludedCategory("Education");
-        auditOptions.showExcludedCategories();
         auditYear();
     }
     

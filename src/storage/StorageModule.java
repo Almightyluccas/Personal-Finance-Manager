@@ -4,10 +4,9 @@ import accounts.Account;
 import accounts.AccountService;
 import integration.AppModule;
 import integration.MenuUtil;
-import validation.Validation;
-
 import java.nio.file.Path;
 import java.util.List;
+import validation.Validation;
 
 /**
  * Entry point for the Storage module. Implements {@link AppModule} so the
@@ -20,7 +19,7 @@ import java.util.List;
  * this module only reads the already-logged-in user from
  * {@link AccountService.SessionManager}.</p>
  *
- * @author Mohammed, Ayub, Fuad
+ * @author Mohammed
  */
 public class StorageModule implements AppModule {
 
@@ -49,7 +48,7 @@ public class StorageModule implements AppModule {
      * Constructs a new {@code StorageModule}. No heavy setup here —
      * that belongs in {@link #initialize()}.
      *
-     * @author Mohammed, Ayub, Fuad
+     * @author Mohammed
      */
     public StorageModule() {
     }
@@ -58,7 +57,7 @@ public class StorageModule implements AppModule {
      * {@inheritDoc}
      *
      * @return the module name used by Integration's registry
-     * @author Mohammed, Ayub, Fuad
+     * @author Mohammed
      */
     @Override
     public String getModuleName() {
@@ -71,7 +70,7 @@ public class StorageModule implements AppModule {
      * read through {@link MenuUtil}'s shared scanner rather than a
      * module-local one, so there is no {@code Scanner} to set up here.
      *
-     * @author Mohammed, Ayub, Fuad
+     * @author Mohammed
      */
     @Override
     public void initialize() {
@@ -88,7 +87,7 @@ public class StorageModule implements AppModule {
      * the user selects this module from the main menu. Requires that a
      * user is already logged in via the Accounts module.
      *
-     * @author Mohammed, Ayub, Fuad
+     * @author Mohammed
      */
     @Override
     public void handleSelection() {
@@ -127,10 +126,16 @@ public class StorageModule implements AppModule {
      * Looks up and prints all budget years on file for the given user.
      *
      * @param username the logged-in user's username
-     * @author Mohammed, Ayub, Fuad
+     * @author Mohammed
      */
     private void handleListBudgetYears(String username) {
-        List<Integer> years = budgetStorage.listYearsForUser(username);
+        List<Integer> years;
+        try {
+            years = budgetStorage.listYearsForUser(username);
+        } catch (RuntimeException e) {
+            System.out.println("Could not list budgets: " + e.getMessage());
+            return;
+        }
         if (years == null || years.isEmpty()) {
             System.out.println("No budgets found for " + username + ".");
             return;
@@ -149,7 +154,7 @@ public class StorageModule implements AppModule {
      * prints an aligned table with whole-dollar amounts.
      *
      * @param username the logged-in user's username
-     * @author Mohammed, Ayub, Fuad
+     * @author Mohammed
      */
     private void handleViewBudget(String username) {
         int year = promptForYear();
@@ -163,7 +168,13 @@ public class StorageModule implements AppModule {
             return;
         }
 
-        Budget budget = budgetStorage.readBudget(username, year);
+        Budget budget;
+        try {
+            budget = budgetStorage.readBudget(username, year);
+        } catch (RuntimeException e) {
+            System.out.println("Could not read budget for " + year + ": " + e.getMessage());
+            return;
+        }
         List<Transaction> transactions = budget.getTransactions();
         System.out.println("Budget for " + year + " (" + transactions.size() + " transactions):");
 
@@ -180,7 +191,7 @@ public class StorageModule implements AppModule {
      * right-aligned amounts.
      *
      * @param transactions the transactions to print
-     * @author Mohammed, Ayub, Fuad
+     * @author Mohammed
      */
     private void printTransactionTable(List<Transaction> transactions) {
         int categoryWidth = "Category".length();
@@ -205,7 +216,7 @@ public class StorageModule implements AppModule {
      *
      * @param amount the amount to format
      * @return the formatted amount
-     * @author Mohammed, Ayub, Fuad
+     * @author Mohammed
      */
     private String formatCurrency(double amount) {
         long rounded = Math.round(amount);
@@ -226,7 +237,7 @@ public class StorageModule implements AppModule {
      * — the year is now read directly from the file name instead.
      *
      * @param username the logged-in user's username
-     * @author Mohammed, Ayub, Fuad
+     * @author Mohammed
      */
     private void handleImportCsv(String username) {
         String filePath = MenuUtil.promptString("Path to CSV file");
@@ -253,18 +264,23 @@ public class StorageModule implements AppModule {
         String baseName = Path.of(filePath).getFileName().toString();
         int year = Integer.parseInt(baseName.substring(0, 4));
 
-        Budget budget = budgetStorage.yearExists(username, year)
-                ? budgetStorage.readBudget(username, year)
-                : new Budget(year);
+        try {
+            Budget budget = budgetStorage.yearExists(username, year)
+                    ? budgetStorage.readBudget(username, year)
+                    : new Budget(year);
 
-        for (Transaction t : valid) {
-            budget.addTransaction(t);
-        }
+            for (Transaction t : valid) {
+                budget.addTransaction(t);
+            }
 
-        if (budgetStorage.yearExists(username, year)) {
-            budgetStorage.updateBudget(username, budget);
-        } else {
-            budgetStorage.createBudget(username, budget);
+            if (budgetStorage.yearExists(username, year)) {
+                budgetStorage.updateBudget(username, budget);
+            } else {
+                budgetStorage.createBudget(username, budget);
+            }
+        } catch (RuntimeException e) {
+            System.out.println("Could not import transactions into " + year + ": " + e.getMessage());
+            return;
         }
 
         System.out.println("Imported " + valid.size() + " transactions into " + year + ".");
@@ -284,7 +300,7 @@ public class StorageModule implements AppModule {
      * filtered subset the user's original file couldn't give them.
      *
      * @param username the logged-in user's username
-     * @author Mohammed, Ayub, Fuad
+     * @author Mohammed
      */
     private void handleExportCsv(String username) {
         int year = promptForYear();
@@ -298,7 +314,13 @@ public class StorageModule implements AppModule {
             return;
         }
 
-        Budget budget = budgetStorage.readBudget(username, year);
+        Budget budget;
+        try {
+            budget = budgetStorage.readBudget(username, year);
+        } catch (RuntimeException e) {
+            System.out.println("Could not read budget for " + year + ": " + e.getMessage());
+            return;
+        }
 
         List<Transaction> toExport = chooseExportSubset(budget);
         if (toExport == null) {
@@ -323,7 +345,7 @@ public class StorageModule implements AppModule {
      * @param budget the budget to export from
      * @return the selected transactions, or {@code null} if the user
      *         cancelled
-     * @author Mohammed, Ayub, Fuad
+     * @author Mohammed
      */
     private List<Transaction> chooseExportSubset(Budget budget) {
         String choice = MenuUtil.promptChoice("Export " + budget.getYear() + " Transactions",
@@ -351,7 +373,7 @@ public class StorageModule implements AppModule {
      * that year's budget.
      *
      * @param username the logged-in user's username
-     * @author Mohammed, Ayub, Fuad
+     * @author Mohammed
      */
     private void handleDeleteBudget(String username) {
         int year = promptForYear();
@@ -368,7 +390,12 @@ public class StorageModule implements AppModule {
         boolean confirmed = MenuUtil.promptYesNo(
                 "Delete budget for " + year + "? This cannot be undone");
         if (confirmed) {
-            budgetStorage.deleteBudget(username, year);
+            try {
+                budgetStorage.deleteBudget(username, year);
+            } catch (RuntimeException e) {
+                System.out.println("Could not delete budget for " + year + ": " + e.getMessage());
+                return;
+            }
             System.out.println("Deleted budget for " + year + ".");
         } else {
             System.out.println("Cancelled.");
@@ -389,7 +416,7 @@ public class StorageModule implements AppModule {
      *
      * @return the year entered by the user, or {@link #CANCEL} if
      *         the user cancelled or entered something unparseable
-     * @author Mohammed, Ayub, Fuad
+     * @author Mohammed
      */
     private int promptForYear() {
         String input = MenuUtil.promptString("Enter year (or 0 to cancel)");
@@ -406,7 +433,7 @@ public class StorageModule implements AppModule {
      *
      * @return the month entered by the user, or {@link #CANCEL} if the
      *         user cancelled or entered something invalid
-     * @author Mohammed, Ayub, Fuad
+     * @author Mohammed
      */
     private int promptForMonth() {
         String input = MenuUtil.promptString("Enter month (1-12, or 0 to cancel)");

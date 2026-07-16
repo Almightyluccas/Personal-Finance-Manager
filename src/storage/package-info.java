@@ -6,6 +6,6 @@
  * support, budget management classes, and transaction records used by the
  * budgeting application.</p>
  *
- * @author Mohammed, Ayub, Fuad
+ * @author Fuad
  */
 package storage;

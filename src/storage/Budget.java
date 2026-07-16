@@ -7,7 +7,7 @@ import java.util.List;
  * Represents a user's budget for a given year, containing a collection of
  * {@link Transaction} records and operations to query and modify them.
  *
- * @author Mohammed, Ayub, Fuad
+ * @author Fuad
  */
 public class Budget {
     /**
@@ -24,7 +24,7 @@ public class Budget {
      * Constructs a new, empty {@code Budget} for the specified year.
      *
      * @param year the year this budget represents
-     * @author Mohammed, Ayub, Fuad
+     * @author Fuad
      */
     public Budget(int year) {
         this.year = year;
@@ -35,7 +35,7 @@ public class Budget {
      * Returns the year associated with this budget.
      *
      * @return the budget year
-     * @author Mohammed, Ayub, Fuad
+     * @author Fuad
      */
     public int getYear() {
         return year;
@@ -45,7 +45,7 @@ public class Budget {
      * Returns all transactions currently stored in this budget.
      *
      * @return a list of all transactions
-     * @author Mohammed, Ayub, Fuad
+     * @author Fuad
      */
     public List<Transaction> getTransactions() {
         return transactions;
@@ -55,7 +55,7 @@ public class Budget {
      * Adds a new transaction to this budget.
      *
      * @param transaction the transaction to add
-     * @author Mohammed, Ayub, Fuad
+     * @author Fuad
      */
     public void addTransaction(Transaction transaction) {
         if (transaction != null) {
@@ -68,7 +68,7 @@ public class Budget {
      *
      * @param month the month to filter by (1-12)
      * @return a list of transactions occurring in the given month
-     * @author Mohammed, Ayub, Fuad
+     * @author Fuad
      */
     public List<Transaction> getTransactionsByMonth(int month) {
         List<Transaction> result = new ArrayList<>();
@@ -88,7 +88,7 @@ public class Budget {
      *
      * @param category the category to filter by
      * @return a list of transactions belonging to the given category
-     * @author Mohammed, Ayub, Fuad
+     * @author Fuad
      */
     public List<Transaction> getTransactionsByCategory(String category) {
         List<Transaction> result = new ArrayList<>();

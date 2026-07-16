@@ -13,7 +13,7 @@ import java.util.List;
  * Handles reading and parsing of CSV files into {@link Transaction} records,
  * including previewing file contents and filtering out invalid rows.
  *
- * @author Mohammed, Ayub, Fuad
+ * @author Ayub
  */
 public class CsvImporter {
 
@@ -24,7 +24,7 @@ public class CsvImporter {
     /**
      * Constructs a new {@code CsvImporter} instance.
      *
-     * @author Mohammed, Ayub, Fuad
+     * @author Ayub
      */
     public CsvImporter() {
     }
@@ -36,7 +36,7 @@ public class CsvImporter {
      *
      * @param filePath the path to the CSV file
      * @return a list of raw lines representing a preview of the file
-     * @author Mohammed, Ayub, Fuad
+     * @author Ayub
      */
     public List<String> previewCsvFile(String filePath) {
         List<String> preview = new ArrayList<>();
@@ -61,7 +61,7 @@ public class CsvImporter {
      * @param filePath the path to the CSV file
      * @return a list of parsed transactions (may contain {@code null} for
      *         malformed rows)
-     * @author Mohammed, Ayub, Fuad
+     * @author Ayub
      */
     public List<Transaction> parseCsvFile(String filePath) {
         List<Transaction> transactions = new ArrayList<>();
@@ -99,17 +99,17 @@ public class CsvImporter {
      * @param line the raw CSV line to parse
      * @return the parsed transaction, or {@code null} if the line is
      *         malformed
-     * @author Mohammed, Ayub, Fuad
+     * @author Ayub
      */
     public Transaction parseLine(String line) {
-        String[] fields = line.split(",");
-        if (fields.length != 3) {
+        List<String> fields = splitCsvLine(line);
+        if (fields.size() != 3) {
             return null;
         }
 
-        String rawDate = fields[0].trim();
-        String category = fields[1].trim();
-        String rawAmount = fields[2].trim();
+        String rawDate = fields.get(0).trim();
+        String category = fields.get(1).trim();
+        String rawAmount = fields.get(2).trim();
 
         LocalDate date;
         try {
@@ -133,13 +133,53 @@ public class CsvImporter {
     }
 
     /**
+     * Splits one line of CSV text into fields, honouring quoted fields so
+     * that commas inside quotation marks (e.g. {@code "Food, Dining"}) are
+     * kept as part of a single field rather than treated as separators. A
+     * doubled quote ({@code ""}) inside a quoted field is read as one
+     * literal quote character.
+     *
+     * @param line the raw CSV line to split
+     * @return the parsed fields, with surrounding quotes removed
+     * @author Fuad
+     */
+    private List<String> splitCsvLine(String line) {
+        List<String> fields = new ArrayList<>();
+        StringBuilder currentField = new StringBuilder();
+        boolean insideQuotes = false;
+
+        for (int i = 0; i < line.length(); i++) {
+            char currentCharacter = line.charAt(i);
+
+            if (currentCharacter == '"') {
+                if (insideQuotes
+                        && i + 1 < line.length()
+                        && line.charAt(i + 1) == '"') {
+                    currentField.append('"');
+                    i++;
+                } else {
+                    insideQuotes = !insideQuotes;
+                }
+            } else if (currentCharacter == ',' && !insideQuotes) {
+                fields.add(currentField.toString());
+                currentField.setLength(0);
+            } else {
+                currentField.append(currentCharacter);
+            }
+        }
+
+        fields.add(currentField.toString());
+        return fields;
+    }
+
+    /**
      * Filters out invalid or malformed records from a list of parsed
      * transactions. Currently removes {@code null} entries produced by
      * {@link #parseLine(String)} for rows that failed to parse.
      *
      * @param transactions the transactions to filter
      * @return a list containing only valid transactions
-     * @author Mohammed, Ayub, Fuad
+     * @author Ayub
      */
     public List<Transaction> filterInvalidRecords(List<Transaction> transactions) {
         List<Transaction> valid = new ArrayList<>();

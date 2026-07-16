@@ -80,7 +80,7 @@ import java.security.NoSuchAlgorithmException;
 		if (!Validation.isValidPassword(password)) return false;
 		if (!Validation.isValidSecretQuestion(secretQuestion)) return false;
 		if (!Validation.isValidSecretAnswer(secretAnswer)) return false;
-		password = hashPassword(password);
+		password = hash(password);
 		
 		//Assuming storage uses a try-catch block:
 		AccountFileManager.saveAccount(username, password, secretQuestion, secretAnswer); //AccountFileManager needs to be a static utility class
@@ -104,7 +104,7 @@ import java.security.NoSuchAlgorithmException;
 			return false;
 		Account account = (Account) AccountFileManager.loadAccount(username);
 
-		String hashedInput = hashPassword(password);
+		String hashedInput = hash(password);
 		if(hashedInput.equals(account.getHashedPassword())){
 			SessionManager.setCurrentUser(account);
 			return true;
@@ -247,7 +247,7 @@ import java.security.NoSuchAlgorithmException;
 		
 		
 		//hashing the new password
-		String hashedPassword = hashPassword(newPassword);
+		String hashedPassword = hash(newPassword);
 		if(hashedPassword == null) {
 			System.err.println("Error; failure  to hash password.");
 			return false;
@@ -288,7 +288,7 @@ import java.security.NoSuchAlgorithmException;
 	 * @return the hashed password
 	 * @author Sakif
 	 */
-	private static String hashPassword(String password) {
+	private static String hash(String password) {
 		// postcondition: the password is hashed.
 		// hashing the password using SHA-256
 		if (password == null || password.isEmpty()) {

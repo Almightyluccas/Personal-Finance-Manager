@@ -79,18 +79,79 @@ import java.security.NoSuchAlgorithmException;
 		// and secret question/answer. The account is stored into the appropiate CSV file. The password in the CSV file 
 		// will be hashed
 		
-		if (!Validation.isValidUsername(username)) return false;
-		if (AccountFileManager.accountExists(username)) return false; //AccountFileManager needs to be a static utitlity class
-		if (!Validation.isValidPassword(password)) return false;
-		if (!Validation.isValidSecretQuestion(secretQuestion)) return false;
-		if (!Validation.isValidSecretAnswer(secretAnswer)) return false;
+		if (!Validation.isValidUsername(username)) {
+			System.out.println("Username \"" + username + "\" failed:  " + missingUserReq(username));
+			return false;
+		}
+		if (AccountFileManager.accountExists(username)) {
+			System.out.println("Username \"" + username + "\" failed: Username alredy taken.");
+			return false; 
+		}
+		if (!Validation.isValidPassword(password)) {
+			System.out.println("Password \"" + password + "\" failed: " + missingPasswordReq(password));
+			return false;
+		}
+		if (!Validation.isValidSecretQuestion(secretQuestion)) {
+			System.out.println("Secret question \"" + secretQuestion +"\" failed:\n"
+					+ "Question must be between 10 and 100 characters in length.");
+			return false;
+		}
+		if (!Validation.isValidSecretAnswer(secretAnswer)) {
+			System.out.println("Secret answer \"" + secretAnswer + "\" failed:\n"
+					+ "Answer must be between 2 and 100 characters in length.");
+			return false;
+		}
+		
 		password = hash(password);
+		secretAnswer = hash(secretAnswer);
 		
 		//Assuming storage uses a try-catch block:
-		AccountFileManager.saveAccount(username, password, secretQuestion, secretAnswer); //AccountFileManager needs to be a static utility class
+		AccountFileManager.saveAccount(username, password, secretQuestion, secretAnswer);
 		return true;
 	
 	}
+	
+	/**
+	 * Finds why the username failed validation.
+	 * @param username the username that failed validation.
+	 * @return a meaningful message to why said username failed.
+	 * @author Dwann
+	 */
+	private static String missingUserReq(String username) {
+		if (username.length() < 4) {
+			return "Username must be at least 4 characters in length.";
+		} else if (username.length() > 20) {
+			return "Username must be no longer than 20 characters in length.";
+		} else if (username.matches(".*[^A-Za-z0-9_].*")){
+			if (username.contains(" "))
+				return "Username cannot contain spaces.";
+			return "Only letters, numbers, and underscores are allowed.";
+		}
+		
+		return null;
+	}
+	
+	/**
+	 * Finds why the password failed validation.
+	 * @param password the password that failed validation.
+	 * @return a meaningful message to why said username failed.
+	 * @author Dwann
+	 */
+	private static String missingPasswordReq(String password) {
+		if (password.length() < 8) {
+			return "Password must be at least 8 characters in length";
+		} else if (password.matches("^[^A-Z]*$")) {
+			return "Password must contain at least one uppercase letter";
+		} else if (password.matches("^[^a-z]*$")) {
+			return "Password must contain at least one lowercase letter";
+		} else if (password.matches("^\\D*$")) {
+			return "Password must contain at least one number";
+		}
+		
+		return null;
+	}
+	
+	
 	/**
 	 * logs in a user into an account
 	 * @param username the users username
@@ -102,7 +163,7 @@ import java.security.NoSuchAlgorithmException;
 		// requirements: The username must be within the CSV file. The user's account info must be read from the file.
 		// Upon hashing the password witt the same hasing algorithm, it must match the hashed password read from file.
 		//
-		// postconditions: The user can go to the next page set by integration to access there audits n stuff
+		// postconditions: The user can go to the next page set by integration to access their audits and related information.
 		
 		if (!AccountFileManager.accountExists(username))
 			return false;
@@ -174,16 +235,11 @@ import java.security.NoSuchAlgorithmException;
 
 		Account account = (Account) AccountFileManager.loadAccount(username);
 		
-		/*if (account == null) {
+		if (account == null) {
 		    System.out.println("No account found with that username.");
-
 		    scanner.close();
 		    return;
 		}
-
-		    return;*/
-		
-
 
 		System.out.println(account.getSecretQuestion());
 		System.out.print("Enter your answer: ");
@@ -200,22 +256,6 @@ import java.security.NoSuchAlgorithmException;
 		scanner.close();
 	}
 
-	
-	/**
-	 * prompts the user to to answer their secret question. Prompts the user to change
-	 * their username if they answered correctly
-	 * @author Dwann
-	 */
-	
-	public static void forgotUsername() {
-		// requirements: The user must correctly answer their secret question.
-		// postcondition: The user is prompted to change their username.
-		
-		/* After looking at it, this is harder to implement than it seems. I'll
-		 need to add a Person object to an account, so another identifier like 
-		 name or ID can trigger the security question. I'll save that for next sprint */
-	}
-	
 	/**
 	 * verifies the secretAnswer from the user with the one in their account
 	 * @param secretAnswer the secret answer entered from the user
@@ -238,7 +278,7 @@ import java.security.NoSuchAlgorithmException;
 	private static boolean changePassword(String newPassword, Account account) {
 		// requirements: the new password must be valid. the password must then be hashed
 		//
-		// postconditions: the old password is replace with the new password. The pasword is updated in the CSV file.
+		// postconditions: the old password is replace with the new password. The password is updated in the CSV file.
 		if (account == null) {
 			return false;
 		}
@@ -269,17 +309,22 @@ import java.security.NoSuchAlgorithmException;
 	 * @return whether or not the username change was succesful
 	 * @author Dwann
 	 */
-	private static boolean changeUsername(String newUsername, Account account) {
+	public static boolean changeUsername(String newUsername, Account account) {
 		// requirements: the new username must be valid. the new username must also be unique
 		//
 		// postconditions: the old username is replace with the new username. The username is updated in the CSV file.
 		
-		
-		
-		if (!Validation.isValidUsername(newUsername) || AccountFileManager.accountExists(newUsername))
+
+		if (!Validation.isValidUsername(newUsername)) {
+			System.out.println("Username \"" + newUsername + "\" failed:  " + missingUserReq(newUsername));
 			return false;
-		account.setUsername(newUsername);
-		return true;
+		} else if (AccountFileManager.accountExists(newUsername)) {
+			System.out.println("Username \"" + newUsername + "\" failed: Username alredy taken.");
+			return false; 
+		} else {
+			account.setUsername(newUsername);
+			return true;
+		}
 	}
 	
 	

@@ -30,15 +30,18 @@ public class CsvImporter {
     }
 
     /**
-     * Returns a preview of the contents of the specified CSV file without
-     * fully parsing it into transactions. Useful for showing the user a
-     * quick look at the file before committing to a full import.
+     * Returns a preview of the contents of the specified CSV file without fully
+     * parsing it into transactions. Useful for showing the user a quick look at
+     * the file before committing to a full import.
      *
      * @param filePath the path to the CSV file
      * @return a list of raw lines representing a preview of the file
      * @author Ayub
      */
     public List<String> previewCsvFile(String filePath) {
+        if (filePath == null || filePath.isBlank()) {
+            throw new IllegalArgumentException("File path must not be null or empty.");
+        }
         List<String> preview = new ArrayList<>();
         try {
             List<String> allLines = Files.readAllLines(Path.of(filePath));
@@ -53,17 +56,20 @@ public class CsvImporter {
     }
 
     /**
-     * Parses the specified CSV file into a list of transactions. Rows that
-     * fail to parse are included in the returned list as {@code null}
-     * entries so the caller can report how many rows were invalid; use
+     * Parses the specified CSV file into a list of transactions. Rows that fail
+     * to parse are included in the returned list as {@code null} entries so the
+     * caller can report how many rows were invalid; use
      * {@link #filterInvalidRecords(List)} to strip them out before storing.
      *
      * @param filePath the path to the CSV file
      * @return a list of parsed transactions (may contain {@code null} for
-     *         malformed rows)
+     * malformed rows)
      * @author Ayub
      */
     public List<Transaction> parseCsvFile(String filePath) {
+        if (filePath == null || filePath.isBlank()) {
+            throw new IllegalArgumentException("File path must not be null or empty.");
+        }
         List<Transaction> transactions = new ArrayList<>();
         try {
             List<String> lines = Files.readAllLines(Path.of(filePath));
@@ -91,14 +97,13 @@ public class CsvImporter {
     }
 
     /**
-     * Parses a single line of CSV text into a transaction. Returns
-     * {@code null} if the line is malformed (wrong number of fields, an
-     * unparseable date, or a non-numeric amount) rather than throwing, so
-     * callers can tally invalid rows without a try/catch per line.
+     * Parses a single line of CSV text into a transaction. Returns {@code null}
+     * if the line is malformed (wrong number of fields, an unparseable date, or
+     * a non-numeric amount) rather than throwing, so callers can tally invalid
+     * rows without a try/catch per line.
      *
      * @param line the raw CSV line to parse
-     * @return the parsed transaction, or {@code null} if the line is
-     *         malformed
+     * @return the parsed transaction, or {@code null} if the line is malformed
      * @author Ayub
      */
     public Transaction parseLine(String line) {
@@ -133,11 +138,11 @@ public class CsvImporter {
     }
 
     /**
-     * Splits one line of CSV text into fields, honouring quoted fields so
-     * that commas inside quotation marks (e.g. {@code "Food, Dining"}) are
-     * kept as part of a single field rather than treated as separators. A
-     * doubled quote ({@code ""}) inside a quoted field is read as one
-     * literal quote character.
+     * Splits one line of CSV text into fields, honouring quoted fields so that
+     * commas inside quotation marks (e.g. {@code "Food, Dining"}) are kept as
+     * part of a single field rather than treated as separators. A doubled quote
+     * ({@code ""}) inside a quoted field is read as one literal quote
+     * character.
      *
      * @param line the raw CSV line to split
      * @return the parsed fields, with surrounding quotes removed

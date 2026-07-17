@@ -7,6 +7,7 @@ import java.io.BufferedReader;
 import java.io.IOException;
 import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
+import java.nio.file.InvalidPathException;
 import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.time.DateTimeException;
@@ -155,25 +156,43 @@ public class Validation
      * @author Tasfia Rahman
      */
     public static boolean isValidFileName(String fileName) {
+        return toValidatedPath(fileName) != null;
+    }
+
+    /**
+     * Resolves a file name to a path, but only if its base name is a valid
+     * PFM file name of the form YYYY.csv.
+     *
+     * <p>
+     * Shared by {@link #isValidFileName(String)} and
+     * {@link #isValidCsvFile(String)} so the path is parsed only once.
+     * </p>
+     *
+     * @param fileName the file name or fully qualified path to resolve
+     * @return the resolved path, or null if the name is not a valid PFM
+     *         file name
+     * @author Tasfia Rahman
+     */
+    private static Path toValidatedPath(String fileName) {
         if (fileName == null || fileName.trim().isEmpty()) {
-            return false;
+            return null;
         }
         Path path;
         try {
             path = Paths.get(fileName.trim());
-        } catch (Exception e) {
-            return false; // malformed path (e.g., illegal characters)
+        } catch (InvalidPathException e) {
+            return null; // malformed path (e.g., illegal characters)
         }
         Path base = path.getFileName();
         if (base == null) {
-            return false;
+            return null;
         }
         String baseName = base.toString();
         if (!FILE_NAME_PATTERN.matcher(baseName).matches()) {
-            return false;
+            return null;
         }
         int year = Integer.parseInt(baseName.substring(0, 4));
-        return year >= MIN_YEAR && year <= MAX_YEAR;
+        return (year >= MIN_YEAR && year <= MAX_YEAR) ? path : null;
     }
 
     /**
@@ -186,10 +205,10 @@ public class Validation
      * @author Tasfia Rahman
      */
     public static boolean isValidCsvFile(String fileName) {
-        if (!isValidFileName(fileName)) {
+        Path path = toValidatedPath(fileName);
+        if (path == null) {
             return false;
         }
-        Path path = Paths.get(fileName.trim());
         if (!Files.isRegularFile(path) || !Files.isReadable(path)) {
             return false;
         }
@@ -247,7 +266,7 @@ public class Validation
         Path candidate;
         try {
             candidate = Paths.get(directory, year + ".csv");
-        } catch (Exception e) {
+        } catch (InvalidPathException e) {
             return false;
         }
         return Files.isRegularFile(candidate);
@@ -256,9 +275,9 @@ public class Validation
 	/**
 	 * Checks to see if the date is in the proper format and represents a valid month, date, and year
 	 *@param date takes in the date as a String object
-     *@param recordIndex the line number of the data record being currently read from the .csv file 
+     *@param recordIndex the line number of the data record being currently read from the .csv file
 	 *@return Returns true if date is in the correct format MM/DD/YYYY and checks to see if the date is valid
- 
+
 	 *@author David Guanga
 	 * */
 	private static boolean isValidDateFormat(String date, int recordIndex)
@@ -295,16 +314,16 @@ public class Validation
             return false;
         }
 	}
-	
+
 	/**
 	 * Checks to see if the year of each entry of the .csv file is the same
-	 *@param year the year of the given .csv file 
+	 *@param year the year of the given .csv file
      *@param yearToCheck the year given by a data entry to check to see if both are equal
-     *@param recordIndex the line number of the data record being currently read from the .csv file 
-	 *@return Returns true if the passed date is of the same year as all the other dates 
+     *@param recordIndex the line number of the data record being currently read from the .csv file
+	 *@return Returns true if the passed date is of the same year as all the other dates
 	 *@author David Guanga
 	 * */
-	public static boolean isSameYear(final String year, String yearToCheck, int recordIndex) 
+	public static boolean isSameYear(final String year, String yearToCheck, int recordIndex)
     {
         boolean isSameYear = year.equals(yearToCheck);
         if(!isSameYear)
@@ -314,15 +333,25 @@ public class Validation
 	}
 
 	/**
-	 * Checks to see if the category matches one of the accepted categories 
+	 * Checks to see if the category matches one of the accepted categories
 	 *@param categ the name of the category to validate
-     *@param recordIndex the line number of the data record being currently read from the .csv file 
+     *@param recordIndex the line number of the data record being currently read from the .csv file
 	 *@return Returns true if the input category is one of the following: Compensation, Allowance, Investments,
 	 *Home, Utilities, Food, Appearance, Work, Education, Transportation, Entertainment, Professional Services, Other
 	 *@author David Guanga
 	 * */
 	private static boolean isValidCategory(String categ, int recordIndex)
     {
+    //TODO:Try to make categories its own type so that categories that are either expenses or income can be easily distinguished and
+    //add to
+        /*String[] validCategories = {
+        "Compensation", "Allowance", "Investments",
+        "Home", "Utilities", "Food",
+        "Appearance", "Work", "Education",
+        "Transportation", "Entertainment",
+        "Professional Services", "Other"
+        };
+        */
         if(validCategories == null)
         {
 
@@ -350,8 +379,8 @@ public class Validation
 	/**
 	 * Checks to see if the amounts can be converted to a number
 	 *@param amount the amount to process and validate
-     *@param recordIndex the line number of the data record being currently read from the .csv file 
-	 *@return Returns true if the String am can be converted into a number 
+     *@param recordIndex the line number of the data record being currently read from the .csv file
+	 *@return Returns true if the String am can be converted into a number
 	 *@author David Guanga
 	 * */
 	private static boolean isValidAmount(String amount, int recordIndex)
@@ -374,11 +403,11 @@ public class Validation
         }
 	}
 	/**
-	 *Sets the column titles to check for in the header of the .csv file 
+	 *Sets the column titles to check for in the header of the .csv file
 	 *@param categories sets the array of valid column titles for the header of the .csv file
      *@author David Guanga
      * */
-	
+
     public static void setValidCategories(String[] categories)
     {
         for(int i = 0; i < categories.length; i++)
@@ -405,9 +434,8 @@ public class Validation
         String category = recordArr[1];
         String amount = recordArr[2];
 
-
-        return Validation.isValidDateFormat(date, recordIndex) 
-        && Validation.isValidCategory(category, recordIndex)
-        && Validation.isValidAmount(amount, recordIndex); 
+        return Validation.isValidDateFormat(date, recordIndex)
+        && Validation.isValidAmount(amount, recordIndex)
+        && Validation.isValidCategory(category, recordIndex);
 	}
 }

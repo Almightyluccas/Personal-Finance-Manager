@@ -80,6 +80,16 @@ public class Account {
 	public String getSecretQuestion() {
 		return secretQuestion;
 	}
+	
+/**
+* Sets the security question if user wishes to change it
+* @param secretQuestion The security question the account will have
+* @author Dwann
+*/
+	public void setSecretQuestion(String secretQuestion) {
+		this.secretQuestion  = secretQuestion;
+	}
+	
 /**
  * Get the answer to the secret question
  * @return Secret answer (should already be  hashed)
@@ -87,5 +97,14 @@ public class Account {
  */
 	public String getSecretAnswer() {
 		return secretAnswer;
+	}
+	
+/**
+ * Sets the answer to the newly set security question
+ * @param secretAnswer the answer to the newly set security question
+ * @author Dwann
+ */
+	public void setSecretAnswer(String secretAnswer) {
+		this.secretAnswer = secretAnswer;
 	}
 }

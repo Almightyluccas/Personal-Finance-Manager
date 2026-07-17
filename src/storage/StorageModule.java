@@ -4,6 +4,7 @@ import accounts.Account;
 import accounts.AccountService;
 import integration.AppModule;
 import integration.MenuUtil;
+import java.nio.file.Files;
 import java.nio.file.Path;
 import java.util.List;
 import validation.Validation;
@@ -242,9 +243,26 @@ public class StorageModule implements AppModule {
     private void handleImportCsv(String username) {
         String filePath = MenuUtil.promptString("Path to CSV file");
 
+        if (!Validation.isValidFileName(filePath)) {
+            System.out.println("'" + filePath + "' is not a valid budget CSV file name. "
+                    + "It must be named YYYY.csv, e.g. \"2025.csv\".");
+            return;
+        }
+
+        Path path = Path.of(filePath.trim());
+        if (!Files.exists(path)) {
+            System.out.println("Could not find a file at '" + filePath + "'. Please check the path and try again.");
+            return;
+        }
+
+        if (!Files.isReadable(path)) {
+            System.out.println("'" + filePath + "' could not be read. "
+                    + "Check that the file isn't open elsewhere and that you have permission to read it.");
+            return;
+        }
+
         if (!Validation.isValidCsvFile(filePath)) {
-            System.out.println("'" + filePath + "' is not a valid budget CSV file. "
-                    + "It must be named YYYY.csv, be readable, and start with the header \""
+            System.out.println("'" + filePath + "' does not start with the required header \""
                     + Validation.VALID_HEADER + "\".");
             return;
         }

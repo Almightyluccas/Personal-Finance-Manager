@@ -1,7 +1,6 @@
 package accounts;
 import validation.Validation;
 import storage.AccountFileManager;
-import java.util.Scanner;
 
 /**
  * Class that provides basic operations for an Account.
@@ -136,47 +135,44 @@ import java.util.Scanner;
 	}
 
 	/**
-	 * prompts the user to to answer their secret question. Prompts the user to change
-	 * their password if they answered correctly
+	 * gets the secret question for a given account, for Integration to display
+	 * before prompting the user for their answer
+	 * @param username the username to look up
+	 * @return the account's secret question, or null if no such account exists
 	 * @author Harmony
 	 */
-
-	public static void forgotPassword() {
-		// requirements: The prompt requesting the user to answer their secret question
-		// must be called. Their answer must be correct.
-		// postcondition: The user is prompted to change their password.
-
-		Scanner scanner = new Scanner(System.in);
-		try {
-			System.out.print("Enter your username: ");
-			String username = scanner.nextLine();
-
-			if (!AccountFileManager.accountExists(username)) {
-				System.err.println("Error: No user exists with the username " + username + ".");
-				return;
-			}
-
-			Account account = (Account) AccountFileManager.loadAccount(username);
-			if (account == null) {
-				System.out.println("No account found with that username.");
-				return;
-			}
-
-			System.out.println(account.getSecretQuestion());
-			System.out.print("Enter your answer: ");
-			String answer = scanner.nextLine();
-
-			if (checkSecretAnswer(answer, account)) {
-			    System.out.print("Correct! Enter your new password: ");
-			    String newPassword = scanner.nextLine();
-			    changePassword(newPassword, account);
-			    System.out.println("Password updated successfully.");
-			} else {
-				System.out.println("Incorrect answer. Password reset denied.");
-			}
-		} finally {
-			scanner.close();
+	public static String getSecretQuestion(String username) {
+		if (!AccountFileManager.accountExists(username)) {
+			return null;
 		}
+		Account account = (Account) AccountFileManager.loadAccount(username);
+		if (account == null) {
+			return null;
+		}
+		return account.getSecretQuestion();
+	}
+
+	/**
+	 * verifies the secret answer for a given account and, if correct, resets
+	 * the account's password to newPassword
+	 * @param username the username whose password is being reset
+	 * @param secretAnswer the answer supplied by the user
+	 * @param newPassword the new password to set if the answer is correct
+	 * @return whether or not the password reset was successful
+	 * @author Harmony
+	 */
+	public static boolean resetPassword(String username, String secretAnswer, String newPassword) {
+		if (!AccountFileManager.accountExists(username)) {
+			return false;
+		}
+		Account account = (Account) AccountFileManager.loadAccount(username);
+		if (account == null) {
+			return false;
+		}
+		if (!checkSecretAnswer(secretAnswer, account)) {
+			return false;
+		}
+		return changePassword(newPassword, account);
 	}
 
 	/**

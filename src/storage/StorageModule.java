@@ -237,6 +237,13 @@ public class StorageModule implements AppModule {
      * cancel" data-corruption bug documented on {@link #promptForYear()}
      * — the year is now read directly from the file name instead.
      *
+     * @bug Previously relied on a single {@link Validation#isValidCsvFile}
+     * check that folded together a bad file name, a missing file, an
+     * unreadable file, and a bad header into one generic message — so a
+     * non-existent path was reported as if the file existed with an
+     * invalid format. The checks are now run separately so the message
+     * matches the actual cause.
+     *
      * @param username the logged-in user's username
      * @author Mohammed
      */

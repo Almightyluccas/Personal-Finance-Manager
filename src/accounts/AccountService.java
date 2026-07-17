@@ -30,6 +30,7 @@ import java.security.NoSuchAlgorithmException;
 		/**
 		 * gets current logged in user
 		 * @return current user or null if not logged in
+		 * @author Sakif
 		 */
 		public static Account getCurrentUser() {
 			return currentUser;
@@ -37,6 +38,7 @@ import java.security.NoSuchAlgorithmException;
 		/**
 		 * sets current logged in user and update authentication
 		 * @param user set as logged in
+		 * @author Sakif
 		 */
 		public static void setCurrentUser(Account user) {
 			currentUser = user;
@@ -45,6 +47,7 @@ import java.security.NoSuchAlgorithmException;
 		/**
 		 * checks if user is authenticated
 		 * @return true if authenticated, false if not
+		 * @author Sakif
 		 */
 		public static boolean isAuthenticated() {
 			return isAuthenticated;
@@ -52,6 +55,7 @@ import java.security.NoSuchAlgorithmException;
 		/**
 		 * clears the session and logs out user
 		 * resets currentuser and isAuthenticated
+		 * @author Sakif
 		 */
 		public static void clearSession() {
 			currentUser = null;
@@ -117,7 +121,7 @@ import java.security.NoSuchAlgorithmException;
 	/**
 	 * saves any changes to the appropiate file(s), and sends the user
 	 * back to the login screen.
-	 * @return whether or not the login was succesful
+	 * @return whether or not the logout was succesful
 	 * @author Sakif
 	 */
 	public static boolean logout() {
@@ -239,9 +243,8 @@ import java.security.NoSuchAlgorithmException;
 			return false;
 		}
 		
-		//IMPORTANT THIS PART IS TEMPORARYY: Replace the follwoing with Validation.isValidPassword() whenever its available
 		if(!Validation.isValidPassword(newPassword)) {
-			System.err.println("Error; password needs to be at least 8 characters long.");
+			System.err.println("Error: Invalid password format.");
 			return false;
 		}
 		
@@ -249,14 +252,12 @@ import java.security.NoSuchAlgorithmException;
 		//hashing the new password
 		String hashedPassword = hash(newPassword);
 		if(hashedPassword == null) {
-			System.err.println("Error; failure  to hash password.");
+			System.err.println("Error: failure to hash password.");
 			return false;
 		}
 		
 		// Update the account with the hashed password
 		account.setHashedPassword(hashedPassword);
-		
-		// IMPORTANT Need AccountFileManager.saveAccount() whenever its ready
 		AccountFileManager.saveAccount(account);
 		return true;
 	}

@@ -141,7 +141,7 @@ public class MainOrchestrator {
                 // rule failed (bad username, bad password, bad secret Q/A, or username taken).
                 // we could possible call a method from Validation for each field so we would know which
                 // input was actually wrong. This way we are able to improve UX."
-                System.out.println("Registration failed. Username may already be taken or input was invalid.");
+                System.out.println("Registration failed.");
             }
         } catch (Exception e) {
             System.out.println("Registration failed: " + e.getMessage());

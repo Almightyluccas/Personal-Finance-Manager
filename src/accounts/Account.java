@@ -24,11 +24,6 @@ public class Account {
  * Should be hashed in storage.
  */
 	private String secretAnswer;
-/**
- * Pathing to user's financial data.
- */
-	//This may no longer be needed, depending on how the storage team handles it
-	//private String pathToUserInfo;
 	
 /**
  * Create new account with the specific details

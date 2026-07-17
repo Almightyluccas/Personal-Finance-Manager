@@ -116,9 +116,11 @@ import java.security.NoSuchAlgorithmException;
 		//
 		// postconditions: The user can go to the next page set by integration to access their audits and related information.
 		
-		if (!AccountFileManager.accountExists(username))
+		/*if (!AccountFileManager.accountExists(username))
 			return false;
-		Account account = (Account) AccountFileManager.loadAccount(username);
+		Account account = (Account) AccountFileManager.loadAccount(username);*/
+		Account account = getAccountFromUsername(username);
+		if (account == null) return false;
 
 		String hashedInput = hash(password);
 		if(hashedInput.equals(account.getHashedPassword())){

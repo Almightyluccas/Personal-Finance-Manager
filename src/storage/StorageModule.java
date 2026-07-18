@@ -146,7 +146,7 @@ public class StorageModule implements AppModule {
 
     /**
      * Prompts for a year and prints every transaction in that year's
-     * budget, if one exists, as an aligned table.
+     * budget if one exists, as an aligned table.
      *
      * @bug Previously printed each transaction as a raw
      * {@code date | category | amount} line with no column alignment,
@@ -187,7 +187,7 @@ public class StorageModule implements AppModule {
     }
 
     /**
-     * Prints the given transactions as an aligned table with the date and
+     * Prints the given transactions as aligned table with the date and
      * category columns sized to fit their contents, and whole-dollar,
      * right-aligned amounts.
      *
@@ -235,14 +235,14 @@ public class StorageModule implements AppModule {
      * named {@code YYYY.csv} (see {@link Validation#isValidFileName}).
      * That redundant prompt was also the entry point for the "0 means
      * cancel" data-corruption bug documented on {@link #promptForYear()}
-     * — the year is now read directly from the file name instead.(FIXED)
+     * — the year is now read directly from the file name instead. (FIXED)
      *
      * @bug Previously relied on a single {@link Validation#isValidCsvFile}
      * check that folded together a bad file name, a missing file, an
      * unreadable file, and a bad header into one generic message — so a
      * non-existent path was reported as if the file existed with an
      * invalid format. The checks are now run separately so the message
-     * matches the actual cause.(FIXED)
+     * matches the actual cause. (FIXED)
      *
      * @param username the logged-in user's username
      * @author Mohammed
@@ -358,7 +358,7 @@ public class StorageModule implements AppModule {
      * incoming transactions should be applied.
      *
      * @param year          the year being imported into
-     * @param existingCount how many transactions are already stored for that year
+     * @param existingCount how many transactions are already stored for that year?
      * @param incomingCount how many valid transactions the file contains
      * @return the chosen mode, or {@code null} if the user cancelled
      * @author Mohammed

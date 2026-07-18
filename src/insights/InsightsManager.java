@@ -6,6 +6,7 @@ import java.time.format.DateTimeFormatter;
 import java.time.format.DateTimeParseException;
 import java.time.format.ResolverStyle;
 import java.util.ArrayList;
+import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
 
@@ -24,9 +25,6 @@ public class InsightsManager {
 
     /** Index of the date column in a transaction row. */
     private static final int DATE_INDEX = 0;
-
-    /** Index of the category column in a transaction row. */
-    private static final int CATEGORY_INDEX = 1;
 
     /** Strict formatter for transaction dates in MM/DD/YYYY format. */
     private static final DateTimeFormatter DATE_FORMATTER =
@@ -58,7 +56,7 @@ public class InsightsManager {
     }
 
     /**
-     * Generates a complete yearly insight result without excluding categories.
+     * Generates insights without excluding any recommendation categories.
      *
      * @param transactions yearly transaction list
      * @return completed insight result
@@ -73,15 +71,14 @@ public class InsightsManager {
     }
 
     /**
-     * Generates a complete yearly insight result while excluding selected
-     * categories.
+     * Generates a complete yearly insight result.
      *
-     * <p>All original transactions are validated to ensure they belong
-     * to the same calendar year. Excluded categories are then removed
-     * before financial calculations are performed.</p>
+     * <p>Excluded categories are removed only from category-specific
+     * recommendations. They are not removed from income, expenses,
+     * net balance, monthly totals, category totals, or percentages.</p>
      *
      * @param transactions yearly transaction list
-     * @param excludedCategories categories that should not be analyzed
+     * @param excludedCategories categories excluded from recommendations
      * @return completed insight result
      * @author Waliur Sun
      */
@@ -91,29 +88,16 @@ public class InsightsManager {
 
         validateTransactions(transactions);
 
-        /*
-         * Validate the original list before applying category exclusions.
-         * This prevents an excluded transaction from hiding a different year.
-         */
-        int year = extractYear(transactions);
-
-        List<String[]> filteredTransactions =
-                filterExcludedCategories(
-                        transactions,
-                        excludedCategories);
-
-        if (filteredTransactions.isEmpty()) {
-            throw new IllegalArgumentException(
-                    "No transactions remain after excluding "
-                            + "the selected categories.");
-        }
+        int year =
+                extractYear(transactions);
 
         /*
-         * Calculate income and expenses in one traversal.
+         * Financial totals must use every transaction.
+         * Excluded categories still represent real expenses.
          */
         BudgetStatistics.BudgetTotals totals =
                 budgetStatistics.calculateTotals(
-                        filteredTransactions);
+                        transactions);
 
         int totalIncome =
                 totals.totalIncome();
@@ -130,13 +114,16 @@ public class InsightsManager {
                 budgetStatistics.determineBudgetStatus(
                         netBalance);
 
+        /*
+         * Monthly and category information also use every transaction.
+         */
         Map<Integer, Integer> monthlyTotals =
                 spendingAnalyzer.calculateMonthlyTotals(
-                        filteredTransactions);
+                        transactions);
 
         Map<String, Integer> categoryTotals =
                 spendingAnalyzer.calculateCategoryTotals(
-                        filteredTransactions);
+                        transactions);
 
         Map<String, Double> categoryPercentages =
                 spendingAnalyzer.calculateCategoryPercentages(
@@ -147,12 +134,23 @@ public class InsightsManager {
                 spendingAnalyzer.calculateAverageMonthlySpending(
                         totalExpenses);
 
+        /*
+         * Only category-specific recommendations use the filtered map.
+         */
+        Map<String, Double> recommendationPercentages =
+                filterRecommendationPercentages(
+                        categoryPercentages,
+                        excludedCategories);
+
         List<String> recommendations =
                 recommendationEngine.generateRecommendations(
                         budgetStatus,
                         netBalance,
-                        categoryPercentages);
+                        recommendationPercentages);
 
+        /*
+         * The report stores the full financial information.
+         */
         return new InsightResult(
                 year,
                 totalIncome,
@@ -167,7 +165,7 @@ public class InsightsManager {
     }
 
     /**
-     * Creates a formatted yearly report without excluding categories.
+     * Creates a formatted yearly report without exclusions.
      *
      * @param transactions yearly transaction list
      * @return formatted report text
@@ -183,10 +181,10 @@ public class InsightsManager {
     }
 
     /**
-     * Creates a formatted yearly report while excluding selected categories.
+     * Creates a formatted yearly report with recommendation exclusions.
      *
      * @param transactions yearly transaction list
-     * @param excludedCategories categories that should not be analyzed
+     * @param excludedCategories categories excluded from recommendations
      * @return formatted report text
      * @author Felix Santos
      * @author Waliur Sun
@@ -205,7 +203,7 @@ public class InsightsManager {
     }
 
     /**
-     * Prints the insight report without excluding categories.
+     * Prints the insight report without exclusions.
      *
      * @param transactions yearly transaction list
      * @author Waliur Sun
@@ -219,10 +217,10 @@ public class InsightsManager {
     }
 
     /**
-     * Prints the insight report while excluding selected categories.
+     * Prints the insight report with recommendation exclusions.
      *
      * @param transactions yearly transaction list
-     * @param excludedCategories categories that should not be analyzed
+     * @param excludedCategories categories excluded from recommendations
      * @author Waliur Sun
      */
     public void displayInsights(
@@ -238,7 +236,7 @@ public class InsightsManager {
     }
 
     /**
-     * Exports the insight report without excluding categories.
+     * Exports the insight report without exclusions.
      *
      * @param transactions yearly transaction list
      * @param filePath destination CSV file path
@@ -258,11 +256,11 @@ public class InsightsManager {
     }
 
     /**
-     * Exports the insight report while excluding selected categories.
+     * Exports the insight report with recommendation exclusions.
      *
      * @param transactions yearly transaction list
      * @param filePath destination CSV file path
-     * @param excludedCategories categories that should not be analyzed
+     * @param excludedCategories categories excluded from recommendations
      * @throws IOException if the report cannot be written
      * @author Felix Santos
      * @author Waliur Sun
@@ -285,64 +283,56 @@ public class InsightsManager {
     }
 
     /**
-     * Removes transactions whose categories appear in the exclusion list.
+     * Creates a percentage map used only for recommendations.
      *
-     * <p>Category comparisons are case-insensitive and ignore surrounding
-     * spaces.</p>
+     * <p>The original percentage map remains unchanged so the report
+     * continues to show every expense category.</p>
      *
-     * @param transactions original transaction list
-     * @param excludedCategories categories that should not be analyzed
-     * @return filtered transaction list
-     * @author Adrian Singh
+     * @param categoryPercentages complete category percentage map
+     * @param excludedCategories categories excluded from recommendations
+     * @return filtered recommendation percentage map
      * @author Waliur Sun
      */
-    private List<String[]> filterExcludedCategories(
-            List<String[]> transactions,
+    private Map<String, Double> filterRecommendationPercentages(
+            Map<String, Double> categoryPercentages,
             List<String> excludedCategories) {
 
-        List<String[]> filteredTransactions =
-                new ArrayList<>();
+        Map<String, Double> filteredPercentages =
+                new LinkedHashMap<>();
 
         if (excludedCategories == null
                 || excludedCategories.isEmpty()) {
 
-            filteredTransactions.addAll(transactions);
-            return filteredTransactions;
+            filteredPercentages.putAll(
+                    categoryPercentages);
+
+            return filteredPercentages;
         }
 
-        for (String[] transaction : transactions) {
-
-            /*
-             * Keep malformed rows so that later validation can produce
-             * an appropriate error message.
-             */
-            if (transaction == null
-                    || transaction.length <= CATEGORY_INDEX) {
-
-                filteredTransactions.add(transaction);
-                continue;
-            }
-
-            String category =
-                    transaction[CATEGORY_INDEX];
+        for (Map.Entry<String, Double> entry
+                : categoryPercentages.entrySet()) {
 
             if (!isExcludedCategory(
-                    category,
+                    entry.getKey(),
                     excludedCategories)) {
 
-                filteredTransactions.add(transaction);
+                filteredPercentages.put(
+                        entry.getKey(),
+                        entry.getValue());
             }
         }
 
-        return filteredTransactions;
+        return filteredPercentages;
     }
 
     /**
-     * Determines whether a transaction category is excluded.
+     * Determines whether a category is excluded from recommendations.
+     *
+     * <p>Comparisons are case-insensitive and ignore surrounding spaces.</p>
      *
      * @param category transaction category
-     * @param excludedCategories categories selected for exclusion
-     * @return true when the category should be excluded
+     * @param excludedCategories excluded category list
+     * @return true if the category is excluded
      * @author Waliur Sun
      */
     private boolean isExcludedCategory(
@@ -391,9 +381,6 @@ public class InsightsManager {
     /**
      * Extracts and validates the year of every transaction.
      *
-     * <p>Every transaction included in one insight report must belong
-     * to the same calendar year.</p>
-     *
      * @param transactions transaction list
      * @return common calendar year
      * @author Felix Santos
@@ -436,8 +423,8 @@ public class InsightsManager {
     /**
      * Parses and validates the date in one transaction row.
      *
-     * @param transaction transaction row containing Date, Category, and Amount
-     * @param rowNumber human-readable row number used in error messages
+     * @param transaction transaction row
+     * @param rowNumber human-readable row number
      * @return transaction calendar year
      * @author Waliur Sun
      */

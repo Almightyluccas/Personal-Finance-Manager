@@ -152,7 +152,7 @@ public class StorageModule implements AppModule {
      * {@code date | category | amount} line with no column alignment,
      * no currency symbol, and amounts shown with whatever decimal
      * precision {@code double} happened to produce (e.g. "45.5"). Now
-     * prints an aligned table with whole-dollar amounts.
+     * prints an aligned table with whole-dollar amounts. (FIXED)
      *
      * @param username the logged-in user's username
      * @author Mohammed

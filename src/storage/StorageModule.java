@@ -227,7 +227,7 @@ public class StorageModule implements AppModule {
 
     /**
      * Prompts for a CSV file path, parses and filters its transactions,
-     * then merges them into the budget for the year encoded in the file
+     * then writes them into the budget for the year encoded in the file
      * name (creating the budget if it doesn't already exist).
      *
      * @bug Previously prompted for the year separately from the file
@@ -243,6 +243,15 @@ public class StorageModule implements AppModule {
      * non-existent path was reported as if the file existed with an
      * invalid format. The checks are now run separately so the message
      * matches the actual cause.
+     *
+     * @bug Previously appended an imported file's transactions onto a year
+     * that already existed, with no warning and no de-duplication, then
+     * reported plain "Imported N transactions" as if nothing unusual had
+     * happened. Re-importing the same file silently doubled every total for
+     * that year and gave the user no indication of why the numbers were
+     * wrong. The user is now warned that the year is already populated and
+     * must explicitly choose to replace it, add to it, or cancel — see
+     * {@link #chooseImportMode(int, int, int)}.
      *
      * @param username the logged-in user's username
      * @author Mohammed
@@ -286,29 +295,89 @@ public class StorageModule implements AppModule {
             return;
         }
 
+        if (valid.isEmpty()) {
+            System.out.println("No valid transactions found in '" + filePath + "'. Nothing was imported.");
+            return;
+        }
+
         String baseName = Path.of(filePath).getFileName().toString();
         int year = Integer.parseInt(baseName.substring(0, 4));
 
         try {
-            Budget budget = budgetStorage.yearExists(username, year)
+            Budget existing = budgetStorage.yearExists(username, year)
                     ? budgetStorage.readBudget(username, year)
-                    : new Budget(year);
+                    : null;
 
+            if (existing == null) {
+                Budget budget = new Budget(year);
+                for (Transaction t : valid) {
+                    budget.addTransaction(t);
+                }
+                budgetStorage.createBudget(username, budget);
+                System.out.println("Imported " + valid.size() + " transaction(s) into " + year + ".");
+                return;
+            }
+
+            int existingCount = existing.getTransactions().size();
+            ImportMode mode = chooseImportMode(year, existingCount, valid.size());
+            if (mode == null) {
+                System.out.println("Cancelled. " + year + " was left unchanged.");
+                return;
+            }
+
+            Budget budget = (mode == ImportMode.REPLACE) ? new Budget(year) : existing;
             for (Transaction t : valid) {
                 budget.addTransaction(t);
             }
+            budgetStorage.updateBudget(username, budget);
 
-            if (budgetStorage.yearExists(username, year)) {
-                budgetStorage.updateBudget(username, budget);
+            if (mode == ImportMode.REPLACE) {
+                System.out.println("Replaced " + year + ": " + existingCount
+                        + " transaction(s) removed, " + valid.size() + " imported.");
             } else {
-                budgetStorage.createBudget(username, budget);
+                System.out.println("Added " + valid.size() + " transaction(s) to " + year
+                        + " (" + budget.getTransactions().size() + " total).");
             }
         } catch (RuntimeException e) {
             System.out.println("Could not import transactions into " + year + ": " + e.getMessage());
-            return;
         }
+    }
 
-        System.out.println("Imported " + valid.size() + " transactions into " + year + ".");
+    /**
+     * The two ways an import can be applied to a year that already has
+     * transactions stored for it.
+     *
+     * @author Mohammed
+     */
+    private enum ImportMode {
+        /** Discard the stored transactions and keep only the imported ones. */
+        REPLACE,
+        /** Keep the stored transactions and append the imported ones. */
+        ADD
+    }
+
+    /**
+     * Warns that the target year is already populated and asks how the
+     * incoming transactions should be applied.
+     *
+     * @param year          the year being imported into
+     * @param existingCount how many transactions are already stored for that year
+     * @param incomingCount how many valid transactions the file contains
+     * @return the chosen mode, or {@code null} if the user cancelled
+     * @author Mohammed
+     */
+    private ImportMode chooseImportMode(int year, int existingCount, int incomingCount) {
+        String choice = MenuUtil.promptChoice(
+                year + " already has " + existingCount + " transaction(s)",
+                "1. Replace them with the " + incomingCount + " in this file",
+                "2. Add this file's " + incomingCount + " to them",
+                "0. Cancel");
+
+        return switch (choice) {
+            case "1" -> ImportMode.REPLACE;
+            case "2" -> ImportMode.ADD;
+            default -> null;
+        };
     }
 
     /**
@@ -359,7 +428,20 @@ public class StorageModule implements AppModule {
         }
 
         String filePath = MenuUtil.promptString("Destination file path");
-        csvExporter.writeReportToCsv(toExport, filePath);
+
+        try {
+            if (Files.exists(Path.of(filePath))) {
+                if (!MenuUtil.promptYesNo("'" + filePath + "' already exists. Overwrite it?")) {
+                    System.out.println("Cancelled.");
+                    return;
+                }
+            }
+            csvExporter.writeReportToCsv(toExport, filePath);
+        } catch (RuntimeException e) {
+            System.out.println("Could not export to '" + filePath + "': " + e.getMessage());
+            return;
+        }
+
         System.out.println("Exported " + toExport.size() + " transaction(s) to " + filePath + ".");
     }
 

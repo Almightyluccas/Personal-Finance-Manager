@@ -1,6 +1,7 @@
 package dataaudit;
  
 import java.util.ArrayList;
+import java.util.HashSet;
 import java.util.HashMap;
  
 /**
@@ -65,6 +66,7 @@ public class AnomalyChecker {
         // Check each transaction against its category average
         System.out.println("=== Anomaly Detection Results ===");
         boolean anomalyFound = false;
+        HashSet<String> skippedCategories = new HashSet<>();
  
         for (String[] transaction : transactions) {
             String category = transaction[1];
@@ -72,7 +74,11 @@ public class AnomalyChecker {
  
             ArrayList<Double> amounts = categoryAmounts.get(category);
             if (amounts == null || amounts.size() < MIN_ENTRIES_FOR_BASELINE) {
-                System.out.println("Skipping " + category + ": insufficient data for baseline.");
+                if (!skippedCategories.contains(category)) {
+                    System.out.println("Skipping " + category
+                            + ": insufficient data for baseline.");
+                    skippedCategories.add(category);
+                }
                 continue;
             }
  

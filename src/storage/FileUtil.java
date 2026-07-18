@@ -9,7 +9,7 @@ import java.nio.file.Paths;
  * Provides low-level file system utility operations used throughout the
  * Storage module, such as path resolution and data directory management.
  *
- * @author Mohammed, Ayub, Fuad
+ * @author Mohammed
  */
 public class FileUtil {
 
@@ -24,7 +24,7 @@ public class FileUtil {
     /**
      * Constructs a new {@code FileUtil} instance.
      *
-     * @author Mohammed, Ayub, Fuad
+     * @author Mohammed
      */
     public FileUtil() {
     }
@@ -36,7 +36,7 @@ public class FileUtil {
      * @param fileName the relative file name to resolve
      * @return the resolved absolute path
      * @throws IllegalArgumentException if {@code fileName} is null or blank
-     * @author Mohammed, Ayub, Fuad
+     * @author Mohammed
      */
     public Path resolvePath(String fileName) {
         if (fileName == null || fileName.isBlank()) {
@@ -51,7 +51,7 @@ public class FileUtil {
      * necessary.
      *
      * @throws IllegalStateException if the data directory could not be created
-     * @author Mohammed, Ayub, Fuad
+     * @author Mohammed
      */
     public void ensureDataDirectoryExists() {
         try {
@@ -67,7 +67,7 @@ public class FileUtil {
      *
      * @param path the path to check
      * @return {@code true} if the file exists, {@code false} otherwise
-     * @author Mohammed, Ayub, Fuad
+     * @author Mohammed
      */
     public boolean fileExists(Path path) {
         return path != null && Files.exists(path);

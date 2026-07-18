@@ -1,7 +1,6 @@
 package storage;
 
 import accounts.Account;
-
 import java.io.IOException;
 import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
@@ -14,7 +13,7 @@ import java.util.List;
  * Manages persistence of user account data to and from the file system,
  * including basic password obfuscation.
  *
- * @author Mohammed, Ayub, Fuad
+ * @author Fuad
  */
 public final class AccountFileManager {
 
@@ -26,7 +25,7 @@ public final class AccountFileManager {
     /**
      * Private constructor prevents this utility class from being instantiated.
      *
-     * @author Mohammed, Ayub, Fuad
+     * @author Fuad
      */
     private AccountFileManager() {
     }
@@ -40,7 +39,7 @@ public final class AccountFileManager {
      *
      * @param username the username identifying the account
      * @param password the already-hashed password to persist, which will be obfuscated
-     * @author Mohammed, Ayub, Fuad
+     * @author Fuad
      */
     public static void saveAccount(String username, String password) {
         saveAccount(username, password, "", "");
@@ -53,7 +52,7 @@ public final class AccountFileManager {
      * @param hashedPassword the already-hashed password to persist
      * @param secretQuestion the secret question for account recovery
      * @param secretAnswer the secret answer for account recovery
-     * @author Mohammed, Ayub, Fuad
+     * @author Fuad
      */
     public static void saveAccount(
             String username,
@@ -69,7 +68,7 @@ public final class AccountFileManager {
      * Saves the given account object to the file system.
      *
      * @param account the account to save
-     * @author Mohammed, Ayub, Fuad
+     * @author Fuad
      */
     public static void saveAccount(Account account) {
         if (account == null) {
@@ -116,9 +115,9 @@ public final class AccountFileManager {
      *
      * @param username the username identifying the account
      * @return the loaded {@link Account}, or {@code null} if not found
-     * @author Mohammed, Ayub, Fuad
+     * @author Fuad
      */
-    public static Object loadAccount(String username) {
+    public static Account loadAccount(String username) {
         validateUsername(username);
 
         if (!Files.exists(ACCOUNT_FILE)) {
@@ -146,7 +145,7 @@ public final class AccountFileManager {
      * Deletes the account data associated with the specified username.
      *
      * @param username the username identifying the account
-     * @author Mohammed, Ayub, Fuad
+     * @author Fuad
      */
     public static void deleteAccount(String username) {
         validateUsername(username);
@@ -180,7 +179,7 @@ public final class AccountFileManager {
      *
      * @param username the username to check
      * @return {@code true} if an account exists, {@code false} otherwise
-     * @author Mohammed, Ayub, Fuad
+     * @author Fuad
      */
     public static boolean accountExists(String username) {
         if (username == null || username.isBlank() || !Files.exists(ACCOUNT_FILE)) {
@@ -195,7 +194,7 @@ public final class AccountFileManager {
      *
      * @param plainTextPassword the plaintext password to obfuscate
      * @return the obfuscated password
-     * @author Mohammed, Ayub, Fuad
+     * @author Fuad
      */
     public static String obfuscatePassword(String plainTextPassword) {
         if (plainTextPassword == null) {
@@ -211,7 +210,7 @@ public final class AccountFileManager {
      *
      * @param obfuscatedPassword the obfuscated password to decode
      * @return the plaintext password
-     * @author Mohammed, Ayub, Fuad
+     * @author Fuad
      */
     public static String deobfuscatePassword(String obfuscatedPassword) {
         if (obfuscatedPassword == null) {
@@ -226,7 +225,7 @@ public final class AccountFileManager {
      * Creates the data directory and account file if they do not exist.
      *
      * @throws IOException if the directory or file cannot be created
-     * @author Mohammed, Ayub, Fuad
+     * @author Fuad
      */
     private static void ensureAccountFileExists() throws IOException {
         try {
@@ -247,7 +246,7 @@ public final class AccountFileManager {
      *
      * @param account the account to convert
      * @return the CSV-formatted account line
-     * @author Mohammed, Ayub, Fuad
+     * @author Fuad
      */
     private static String toCsvLine(Account account) {
         return escapeCsv(account.getUsername()) + ","
@@ -261,7 +260,7 @@ public final class AccountFileManager {
      *
      * @param line the CSV line to parse
      * @return the parsed account, or {@code null} if invalid
-     * @author Mohammed, Ayub, Fuad
+     * @author Fuad
      */
     private static Account parseAccount(String line) {
         List<String> fields = parseCsvLine(line);
@@ -283,7 +282,7 @@ public final class AccountFileManager {
      *
      * @param value the value to escape
      * @return the escaped CSV value
-     * @author Mohammed, Ayub, Fuad
+     * @author Fuad
      */
     private static String escapeCsv(String value) {
         if (value == null) {
@@ -307,7 +306,7 @@ public final class AccountFileManager {
      *
      * @param line the CSV line to parse
      * @return the parsed fields
-     * @author Mohammed, Ayub, Fuad
+     * @author Fuad
      */
     private static List<String> parseCsvLine(String line) {
         List<String> fields = new ArrayList<>();
@@ -342,7 +341,7 @@ public final class AccountFileManager {
      * Validates that a username is not null or blank.
      *
      * @param username the username to validate
-     * @author Mohammed, Ayub, Fuad
+     * @author Fuad
      */
     private static void validateUsername(String username) {
         if (username == null || username.isBlank()) {

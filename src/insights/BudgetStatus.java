@@ -5,7 +5,7 @@ package insights;
  *
  * <p>A budget can end with extra money, lose money, or break even.</p>
  *
- * @author Waliur Sun
+ * @author Waliur Sun, Adrian Singh, Felix Santos
  */
 public enum BudgetStatus {
 

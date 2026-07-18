@@ -158,32 +158,52 @@ public class StorageModule implements AppModule {
      * @author Mohammed
      */
     private void handleViewBudget(String username) {
-        int year = promptForYear();
-        if (year == CANCEL) {
-            System.out.println("Cancelled.");
+        Budget budget = promptForExistingBudget(username);
+        if (budget == null) {
             return;
         }
 
-        if (!budgetStorage.yearExists(username, year)) {
-            System.out.println("No budget found for " + year + ".");
-            return;
-        }
-
-        Budget budget;
-        try {
-            budget = budgetStorage.readBudget(username, year);
-        } catch (RuntimeException e) {
-            System.out.println("Could not read budget for " + year + ": " + e.getMessage());
-            return;
-        }
         List<Transaction> transactions = budget.getTransactions();
-        System.out.println("Budget for " + year + " (" + transactions.size() + " transactions):");
+        System.out.println("Budget for " + budget.getYear() + " (" + transactions.size() + " transactions):");
 
         if (transactions.isEmpty()) {
             return;
         }
 
         printTransactionTable(transactions);
+    }
+
+    /**
+     * Prompts for a year and loads that year's budget. Prints the reason and
+     * returns {@code null} if the user cancelled, no budget exists for that
+     * year, or the budget could not be read.
+     *
+     * @param username the logged-in user's username
+     * @return the loaded budget, or {@code null} if none was loaded
+     * @author Fuad
+     */
+    private Budget promptForExistingBudget(String username) {
+        int year = promptForYear();
+        if (year == CANCEL) {
+            System.out.println("Cancelled.");
+            return null;
+        }
+
+        if (!budgetStorage.yearExists(username, year)) {
+            System.out.println("No budget found for " + year + ".");
+            return null;
+        }
+
+        try {
+            Budget budget = budgetStorage.readBudget(username, year);
+            if (budget == null) {
+                System.out.println("Could not read budget for " + year + ".");
+            }
+            return budget;
+        } catch (RuntimeException e) {
+            System.out.println("Could not read budget for " + year + ": " + e.getMessage());
+            return null;
+        }
     }
 
     /**
@@ -394,26 +414,13 @@ public class StorageModule implements AppModule {
      * @author Mohammed
      */
     private void handleExportCsv(String username) {
-        int year = promptForYear();
-        if (year == CANCEL) {
-            System.out.println("Cancelled.");
-            return;
-        }
-
-        if (!budgetStorage.yearExists(username, year)) {
-            System.out.println("No budget found for " + year + ".");
-            return;
-        }
-
-        Budget budget;
-        try {
-            budget = budgetStorage.readBudget(username, year);
-        } catch (RuntimeException e) {
-            System.out.println("Could not read budget for " + year + ": " + e.getMessage());
+        Budget budget = promptForExistingBudget(username);
+        if (budget == null) {
             return;
         }
 
         List<Transaction> toExport = chooseExportSubset(budget);
+
         if (toExport == null) {
             System.out.println("Cancelled.");
             return;

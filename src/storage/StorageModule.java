@@ -235,23 +235,14 @@ public class StorageModule implements AppModule {
      * named {@code YYYY.csv} (see {@link Validation#isValidFileName}).
      * That redundant prompt was also the entry point for the "0 means
      * cancel" data-corruption bug documented on {@link #promptForYear()}
-     * — the year is now read directly from the file name instead.
+     * — the year is now read directly from the file name instead.(FIXED)
      *
      * @bug Previously relied on a single {@link Validation#isValidCsvFile}
      * check that folded together a bad file name, a missing file, an
      * unreadable file, and a bad header into one generic message — so a
      * non-existent path was reported as if the file existed with an
      * invalid format. The checks are now run separately so the message
-     * matches the actual cause.
-     *
-     * @bug Previously appended an imported file's transactions onto a year
-     * that already existed, with no warning and no de-duplication, then
-     * reported plain "Imported N transactions" as if nothing unusual had
-     * happened. Re-importing the same file silently doubled every total for
-     * that year and gave the user no indication of why the numbers were
-     * wrong. The user is now warned that the year is already populated and
-     * must explicitly choose to replace it, add to it, or cancel — see
-     * {@link #chooseImportMode(int, int, int)}.
+     * matches the actual cause.(FIXED)
      *
      * @param username the logged-in user's username
      * @author Mohammed
@@ -268,6 +259,12 @@ public class StorageModule implements AppModule {
         Path path = Path.of(filePath.trim());
         if (!Files.exists(path)) {
             System.out.println("Could not find a file at '" + filePath + "'. Please check the path and try again.");
+            return;
+        }
+
+        if (!Files.isRegularFile(path)) {
+            System.out.println("'" + filePath + "' is a folder, not a file. "
+                    + "Please give the path to a CSV file.");
             return;
         }
 

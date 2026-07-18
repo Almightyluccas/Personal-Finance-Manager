@@ -34,7 +34,7 @@ public class StorageModule implements AppModule {
 
     /**
      * Sentinel returned by {@link #promptForYear()} and
-     * {@link #promptForMonth()} to signal the user cancelled instead of
+     * {@link #promptForMonth()} to signal the user canceled instead of
      * entering a value. {@code 0} is a safe choice since it's never a
      * valid year ({@link Validation#MIN_YEAR} is 1900) or a valid month
      * (months run 1-12).
@@ -175,7 +175,7 @@ public class StorageModule implements AppModule {
 
     /**
      * Prompts for a year and loads that year's budget. Prints the reason and
-     * returns {@code null} if the user cancelled, no budget exists for that
+     * returns {@code null} if the user canceled, no budget exists for that
      * year, or the budget could not be read.
      *
      * @param username the logged-in user's username
@@ -380,7 +380,7 @@ public class StorageModule implements AppModule {
      * @param year          the year being imported into
      * @param existingCount how many transactions are already stored for that year?
      * @param incomingCount how many valid transactions the file contains
-     * @return the chosen mode, or {@code null} if the user cancelled
+     * @return the chosen mode, or {@code null} if the user canceled
      * @author Mohammed
      */
     private ImportMode chooseImportMode(int year, int existingCount, int incomingCount) {
@@ -455,7 +455,7 @@ public class StorageModule implements AppModule {
      *
      * @param budget the budget to export from
      * @return the selected transactions, or {@code null} if the user
-     *         cancelled
+     *         canceled
      * @author Mohammed
      */
     private List<Transaction> chooseExportSubset(Budget budget) {
@@ -526,7 +526,7 @@ public class StorageModule implements AppModule {
      * as an explicit cancel signal instead of a literal year.
      *
      * @return the year entered by the user, or {@link #CANCEL} if
-     *         the user cancelled or entered something unparseable
+     *         the user canceled or entered something unparseable
      * @author Mohammed
      */
     private int promptForYear() {
@@ -543,7 +543,7 @@ public class StorageModule implements AppModule {
      * Prompts the user to enter a month (1-12), or {@code 0} to cancel.
      *
      * @return the month entered by the user, or {@link #CANCEL} if the
-     *         user cancelled or entered something invalid
+     *         user canceled or entered something invalid
      * @author Mohammed
      */
     private int promptForMonth() {

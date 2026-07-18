@@ -11,7 +11,7 @@ package reports;
  *
  * @author Alyssa Johnson
  * @author Sheikh Tanvir Hossain
- * @version 1.0
+ * @version 1.1
  * @since 1.0
  */
 public enum ReportType {
@@ -19,21 +19,40 @@ public enum ReportType {
     /**
      * Generates a complete financial report for a selected year.
      */
-    ANNUAL,
+    ANNUAL("Annual Report"),
 
     /**
      * Generates a financial summary for a selected month.
      */
-    MONTHLY,
+    MONTHLY("Monthly Summary"),
 
     /**
      * Generates yearly totals for each income and expense category.
      */
-    CATEGORY_TOTALS,
+    CATEGORY_TOTALS("Category Totals"),
 
     /**
      * Generates an overall budget performance summary.
      */
-    BUDGET_SUMMARY
+    BUDGET_SUMMARY("Budget Summary");
 
+    private final String displayName;
+
+    ReportType(String displayName) {
+        this.displayName = displayName;
+    }
+
+    /**
+     * Gets the user-facing display name for this report type.
+     *
+     * @return display name for the report type
+     */
+    public String getDisplayName() {
+        return displayName;
+    }
+
+    @Override
+    public String toString() {
+        return displayName;
+    }
 }

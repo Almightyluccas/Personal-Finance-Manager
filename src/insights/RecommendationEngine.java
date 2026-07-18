@@ -2,6 +2,7 @@ package insights;
 
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Locale;
 import java.util.Map;
 
 /**
@@ -12,6 +13,14 @@ import java.util.Map;
  * @author Felix Santos
  */
 public class RecommendationEngine {
+
+    /**
+     * Constructs a new RecommendationEngine.
+     *
+     * @author Waliur Sun
+     */
+    public RecommendationEngine() {
+    }
 
     /**
      * Generates recommendations for a surplus budget.
@@ -27,17 +36,20 @@ public class RecommendationEngine {
 
         validateCategoryPercentages(categoryPercentages);
 
-        List<String> recommendations = new ArrayList<>();
+        List<String> recommendations =
+                new ArrayList<>();
 
         if (netBalance <= 0) {
             recommendations.add(
                     "No surplus recommendations available.");
+
             return recommendations;
         }
 
         recommendations.add(
-                "You finished the year with a surplus of $"
-                        + netBalance + ".");
+                "You finished the year with a surplus of "
+                        + formatMoney(netBalance)
+                        + ".");
 
         recommendations.add(
                 "Consider saving a portion of your surplus.");
@@ -57,8 +69,8 @@ public class RecommendationEngine {
                 recommendations.add(
                         "You could safely increase "
                                 + entry.getKey()
-                                + " spending by approximately $"
-                                + adjustment
+                                + " spending by approximately "
+                                + formatMoney(adjustment)
                                 + ".");
             }
         }
@@ -80,22 +92,26 @@ public class RecommendationEngine {
 
         validateCategoryPercentages(categoryPercentages);
 
-        List<String> recommendations = new ArrayList<>();
+        List<String> recommendations =
+                new ArrayList<>();
 
         if (netBalance >= 0) {
             recommendations.add(
                     "No deficit recommendations available.");
+
             return recommendations;
         }
 
         /*
-         * Convert to long first to safely handle Integer.MIN_VALUE.
+         * Convert to long before Math.abs so that
+         * Integer.MIN_VALUE is handled safely.
          */
-        long deficitAmount = Math.abs((long) netBalance);
+        long deficitAmount =
+                Math.abs((long) netBalance);
 
         recommendations.add(
-                "You exceeded your income by $"
-                        + deficitAmount
+                "You exceeded your income by "
+                        + formatMoney(deficitAmount)
                         + ".");
 
         recommendations.add(
@@ -113,8 +129,8 @@ public class RecommendationEngine {
                 recommendations.add(
                         "Reduce "
                                 + entry.getKey()
-                                + " spending by approximately $"
-                                + reduction
+                                + " spending by approximately "
+                                + formatMoney(reduction)
                                 + ".");
             }
         }
@@ -123,10 +139,10 @@ public class RecommendationEngine {
     }
 
     /**
-     * Finds the largest expense category.
+     * Finds the largest selected expense category.
      *
      * @param categoryPercentages spending percentages by category
-     * @return message describing the largest expense category
+     * @return message describing the largest selected category
      * @author Waliur Sun
      */
     public String compareSpendingPatterns(
@@ -135,7 +151,8 @@ public class RecommendationEngine {
         validateCategoryPercentages(categoryPercentages);
 
         if (categoryPercentages.isEmpty()) {
-            return "No expense categories found.";
+            return "No categories selected for "
+                    + "category-specific recommendations.";
         }
 
         String largestCategory = "";
@@ -145,15 +162,21 @@ public class RecommendationEngine {
                 : categoryPercentages.entrySet()) {
 
             if (entry.getValue() > highestPercentage) {
-                highestPercentage = entry.getValue();
-                largestCategory = entry.getKey();
+                highestPercentage =
+                        entry.getValue();
+
+                largestCategory =
+                        entry.getKey();
             }
         }
 
-        return "Largest spending category: "
+        return "Largest selected spending category: "
                 + largestCategory
                 + " ("
-                + String.format("%.2f", highestPercentage)
+                + String.format(
+                        Locale.US,
+                        "%.1f",
+                        highestPercentage)
                 + "%)";
     }
 
@@ -161,7 +184,7 @@ public class RecommendationEngine {
      * Estimates an adjustment amount for one spending category.
      *
      * @param balanceAmount surplus or deficit amount
-     * @param categoryPercentage category's percentage of total expenses
+     * @param categoryPercentage category percentage of total expenses
      * @return estimated whole-dollar adjustment
      * @author Waliur Sun
      */
@@ -184,7 +207,8 @@ public class RecommendationEngine {
 
         if (adjustment > Integer.MAX_VALUE) {
             throw new IllegalArgumentException(
-                    "Calculated adjustment exceeds the supported range.");
+                    "Calculated adjustment exceeds "
+                            + "the supported range.");
         }
 
         return (int) Math.round(adjustment);
@@ -195,7 +219,7 @@ public class RecommendationEngine {
      *
      * @param status overall budget status
      * @param netBalance yearly net balance
-     * @param categoryPercentages expense percentages by category
+     * @param categoryPercentages selected category percentages
      * @return list of financial recommendations
      * @author Waliur Sun
      */
@@ -209,39 +233,68 @@ public class RecommendationEngine {
                     "Budget status cannot be null.");
         }
 
-        validateCategoryPercentages(categoryPercentages);
+        validateCategoryPercentages(
+                categoryPercentages);
 
-        List<String> recommendations = new ArrayList<>();
+        List<String> recommendations =
+                new ArrayList<>();
 
         recommendations.add(
                 compareSpendingPatterns(
                         categoryPercentages));
 
         switch (status) {
-            case SURPLUS -> recommendations.addAll(
-                    generateSurplusRecommendations(
-                            netBalance,
-                            categoryPercentages));
 
-            case DEFICIT -> recommendations.addAll(
-                    generateDeficitRecommendations(
-                            netBalance,
-                            categoryPercentages));
+            case SURPLUS ->
+                    recommendations.addAll(
+                            generateSurplusRecommendations(
+                                    netBalance,
+                                    categoryPercentages));
 
-            case BALANCED -> recommendations.add(
-                    "Your yearly budget is balanced.");
+            case DEFICIT ->
+                    recommendations.addAll(
+                            generateDeficitRecommendations(
+                                    netBalance,
+                                    categoryPercentages));
+
+            case BALANCED ->
+                    recommendations.add(
+                            "Your yearly budget is balanced.");
         }
 
         return recommendations;
     }
 
     /**
+     * Formats a whole-dollar amount with thousands separators.
+     *
+     * <p>Positive values are displayed as {@code $1,250}.
+     * Negative values are displayed as {@code -$1,250}.</p>
+     *
+     * @param amount whole-dollar amount
+     * @return formatted monetary value
+     * @author Waliur Sun
+     */
+    private String formatMoney(long amount) {
+
+        String formattedNumber =
+                String.format(
+                        Locale.US,
+                        "%,d",
+                        amount);
+
+        if (amount < 0) {
+            return "-$"
+                    + formattedNumber.substring(1);
+        }
+
+        return "$" + formattedNumber;
+    }
+
+    /**
      * Validates all category names and percentage values.
      *
-     * <p>Each category must have a nonblank name, and each percentage
-     * must be a finite number between zero and one hundred.</p>
-     *
-     * @param categoryPercentages expense percentages by category
+     * @param categoryPercentages category percentages to validate
      * @author Waliur Sun
      */
     private void validateCategoryPercentages(
@@ -257,10 +310,15 @@ public class RecommendationEngine {
         for (Map.Entry<String, Double> entry
                 : categoryPercentages.entrySet()) {
 
-            String category = entry.getKey();
-            Double percentage = entry.getValue();
+            String category =
+                    entry.getKey();
 
-            if (category == null || category.isBlank()) {
+            Double percentage =
+                    entry.getValue();
+
+            if (category == null
+                    || category.isBlank()) {
+
                 throw new IllegalArgumentException(
                         "Category name cannot be null or blank.");
             }
@@ -275,16 +333,18 @@ public class RecommendationEngine {
                     category,
                     percentage);
 
-            totalPercentage += percentage;
+            totalPercentage +=
+                    percentage;
         }
 
         /*
-         * A small tolerance prevents harmless floating-point
-         * rounding from rejecting values such as 100.0000001.
+         * A small tolerance accounts for harmless
+         * floating-point rounding.
          */
         if (totalPercentage > 100.01) {
             throw new IllegalArgumentException(
-                    "Combined category percentages cannot exceed 100%.");
+                    "Combined category percentages "
+                            + "cannot exceed 100%.");
         }
     }
 
@@ -301,13 +361,17 @@ public class RecommendationEngine {
 
         if (!Double.isFinite(percentage)) {
             throw new IllegalArgumentException(
-                    "Percentage must be a finite number for category: "
+                    "Percentage must be a finite number "
+                            + "for category: "
                             + category);
         }
 
-        if (percentage < 0.0 || percentage > 100.0) {
+        if (percentage < 0.0
+                || percentage > 100.0) {
+
             throw new IllegalArgumentException(
-                    "Percentage must be between 0 and 100 for category: "
+                    "Percentage must be between 0 and 100 "
+                            + "for category: "
                             + category);
         }
     }

@@ -3,6 +3,8 @@ package insights;
 import java.io.FileWriter;
 import java.io.IOException;
 import java.io.PrintWriter;
+import java.time.Month;
+import java.time.format.TextStyle;
 import java.util.Locale;
 import java.util.Map;
 
@@ -15,6 +17,21 @@ import java.util.Map;
  */
 public class InsightReport {
 
+    /** Width used for summary labels. */
+    private static final int SUMMARY_LABEL_WIDTH = 32;
+
+    /** Width used for summary values. */
+    private static final int SUMMARY_VALUE_WIDTH = 18;
+
+    /** Width used for category names. */
+    private static final int CATEGORY_WIDTH = 28;
+
+    /** Width used for monetary values. */
+    private static final int MONEY_WIDTH = 16;
+
+    /** Width used for percentages. */
+    private static final int PERCENT_WIDTH = 12;
+
     /**
      * Constructs a new InsightReport.
      *
@@ -26,6 +43,9 @@ public class InsightReport {
     /**
      * Generates a formatted text report.
      *
+     * <p>Money values are right aligned, displayed without cents,
+     * and include thousands separators.</p>
+     *
      * @param result completed insight result
      * @return formatted report text
      * @author Waliur Sun
@@ -36,73 +56,139 @@ public class InsightReport {
 
         StringBuilder report = new StringBuilder();
 
-        report.append("=====================================\n");
-        report.append(" Financial Insights Report\n");
-        report.append("=====================================\n\n");
+        report.append(
+                "================================================================\n");
+        report.append(
+                "                   FINANCIAL INSIGHTS REPORT\n");
+        report.append(
+                "================================================================\n\n");
 
-        report.append("Year: ")
-                .append(result.year())
-                .append("\n");
+        appendTextRow(
+                report,
+                "Year",
+                Integer.toString(result.year()));
 
-        report.append("Total Income: $")
-                .append(result.totalIncome())
-                .append("\n");
+        appendMoneyRow(
+                report,
+                "Total Income",
+                result.totalIncome());
 
-        report.append("Total Expenses: $")
-                .append(result.totalExpenses())
-                .append("\n");
+        appendMoneyRow(
+                report,
+                "Total Expenses",
+                result.totalExpenses());
 
-        report.append("Net Balance: $")
-                .append(result.netBalance())
-                .append("\n");
+        appendMoneyRow(
+                report,
+                "Net Balance",
+                result.netBalance());
 
-        report.append("Budget Status: ")
-                .append(result.budgetStatus())
-                .append("\n");
+        appendTextRow(
+                report,
+                "Budget Status",
+                result.budgetStatus().toString());
 
-        report.append("Average Monthly Spending: $")
-                .append(formatDecimal(
-                        result.averageMonthlySpending()))
-                .append("\n\n");
+        appendMoneyRow(
+                report,
+                "Average Monthly Spending",
+                Math.round(
+                        result.averageMonthlySpending()));
 
-        report.append("Monthly Totals\n");
-        report.append("-----------------------------\n");
+        report.append("\n");
+        report.append(
+                "MONTHLY TOTALS\n");
+        report.append(
+                "----------------------------------------------------------------\n");
+
+        report.append(
+                String.format(
+                        Locale.US,
+                        "%-28s %16s%n",
+                        "Month",
+                        "Net Total"));
+
+        report.append(
+                String.format(
+                        Locale.US,
+                        "%-28s %16s%n",
+                        "----------------------------",
+                        "----------------"));
 
         for (Map.Entry<Integer, Integer> entry
                 : result.monthlyTotals().entrySet()) {
 
-            report.append("Month ")
-                    .append(entry.getKey())
-                    .append(": $")
-                    .append(entry.getValue())
-                    .append("\n");
+            String monthName =
+                    Month.of(entry.getKey())
+                            .getDisplayName(
+                                    TextStyle.FULL,
+                                    Locale.US);
+
+            report.append(
+                    String.format(
+                            Locale.US,
+                            "%-28s %16s%n",
+                            monthName,
+                            formatMoney(entry.getValue())));
         }
 
-        report.append("\nExpense Categories\n");
-        report.append("-----------------------------\n");
+        report.append("\n");
+        report.append(
+                "EXPENSE CATEGORIES\n");
+        report.append(
+                "----------------------------------------------------------------\n");
 
-        for (Map.Entry<String, Integer> entry
-                : result.categoryTotals().entrySet()) {
+        report.append(
+                String.format(
+                        Locale.US,
+                        "%-28s %16s %12s%n",
+                        "Category",
+                        "Amount",
+                        "Percent"));
 
-            double percentage =
-                    result.categoryPercentages()
-                            .getOrDefault(
-                                    entry.getKey(),
-                                    0.0);
+        report.append(
+                String.format(
+                        Locale.US,
+                        "%-28s %16s %12s%n",
+                        "----------------------------",
+                        "----------------",
+                        "------------"));
 
-            report.append(entry.getKey())
-                    .append(": $")
-                    .append(entry.getValue())
-                    .append(" (")
-                    .append(formatDecimal(percentage))
-                    .append("%)\n");
+        if (result.categoryTotals().isEmpty()) {
+            report.append(
+                    "No expense categories were found.\n");
+
+        } else {
+            for (Map.Entry<String, Integer> entry
+                    : result.categoryTotals().entrySet()) {
+
+                double percentage =
+                        result.categoryPercentages()
+                                .getOrDefault(
+                                        entry.getKey(),
+                                        0.0);
+
+                report.append(
+                        String.format(
+                                Locale.US,
+                                "%-28s %16s %12s%n",
+                                limitText(
+                                        entry.getKey(),
+                                        CATEGORY_WIDTH),
+                                formatMoney(entry.getValue()),
+                                formatPercentage(percentage)));
+            }
         }
 
-        report.append("\nRecommendations\n");
-        report.append("-----------------------------\n");
+        report.append("\n");
+        report.append(
+                "RECOMMENDATIONS\n");
+        report.append(
+                "----------------------------------------------------------------\n");
 
         if (result.recommendations().isEmpty()) {
-            report.append("- No recommendations available.\n");
+            report.append(
+                    "- No recommendations available.\n");
+
         } else {
             for (String recommendation
                     : result.recommendations()) {
@@ -112,6 +198,9 @@ public class InsightReport {
                         .append("\n");
             }
         }
+
+        report.append(
+                "================================================================\n");
 
         return report.toString();
     }
@@ -123,14 +212,17 @@ public class InsightReport {
      * @author Waliur Sun
      */
     public void printReport(InsightResult result) {
-        System.out.println(generateSummary(result));
+
+        System.out.println(
+                generateSummary(result));
     }
 
     /**
      * Saves the insight report to a CSV file.
      *
      * <p>All text fields are escaped so commas, quotation marks,
-     * and line breaks do not corrupt the CSV structure.</p>
+     * and line breaks do not corrupt the CSV structure. Monetary
+     * values are exported as whole-dollar numeric values.</p>
      *
      * @param result completed insight result
      * @param filePath destination CSV file path
@@ -196,17 +288,24 @@ public class InsightReport {
                     writer,
                     "Summary",
                     "Average Monthly Spending",
-                    formatDecimal(
-                            result.averageMonthlySpending()),
+                    Long.toString(
+                            Math.round(
+                                    result.averageMonthlySpending())),
                     "");
 
             for (Map.Entry<Integer, Integer> entry
                     : result.monthlyTotals().entrySet()) {
 
+                String monthName =
+                        Month.of(entry.getKey())
+                                .getDisplayName(
+                                        TextStyle.FULL,
+                                        Locale.US);
+
                 writeCsvRow(
                         writer,
                         "Month",
-                        Integer.toString(entry.getKey()),
+                        monthName,
                         Integer.toString(entry.getValue()),
                         "");
             }
@@ -247,6 +346,128 @@ public class InsightReport {
     }
 
     /**
+     * Appends one aligned text row to the report.
+     *
+     * @param report report builder
+     * @param label row label
+     * @param value row value
+     * @author Waliur Sun
+     */
+    private void appendTextRow(
+            StringBuilder report,
+            String label,
+            String value) {
+
+        report.append(
+                String.format(
+                        Locale.US,
+                        "%-" + SUMMARY_LABEL_WIDTH
+                                + "s %"
+                                + SUMMARY_VALUE_WIDTH
+                                + "s%n",
+                        label + ":",
+                        value));
+    }
+
+    /**
+     * Appends one aligned monetary row to the report.
+     *
+     * @param report report builder
+     * @param label row label
+     * @param amount whole-dollar amount
+     * @author Waliur Sun
+     */
+    private void appendMoneyRow(
+            StringBuilder report,
+            String label,
+            long amount) {
+
+        appendTextRow(
+                report,
+                label,
+                formatMoney(amount));
+    }
+
+    /**
+     * Formats money without cents and with thousands separators.
+     *
+     * <p>Negative values are displayed in the form
+     * {@code -$1,250}.</p>
+     *
+     * @param amount whole-dollar amount
+     * @return formatted monetary value
+     * @author Waliur Sun
+     */
+    private String formatMoney(long amount) {
+
+        String formattedNumber =
+                String.format(
+                        Locale.US,
+                        "%,d",
+                        amount);
+
+        if (amount < 0) {
+            return "-$"
+                    + formattedNumber.substring(1);
+        }
+
+        return "$" + formattedNumber;
+    }
+
+    /**
+     * Formats a percentage for display.
+     *
+     * @param percentage percentage value
+     * @return percentage formatted with one decimal place
+     * @author Waliur Sun
+     */
+    private String formatPercentage(
+            double percentage) {
+
+        if (!Double.isFinite(percentage)) {
+            throw new IllegalArgumentException(
+                    "Percentage must be a finite number.");
+        }
+
+        return String.format(
+                Locale.US,
+                "%.1f%%",
+                percentage);
+    }
+
+    /**
+     * Shortens text that exceeds the available report-column width.
+     *
+     * @param value text to display
+     * @param maximumLength maximum permitted length
+     * @return original or shortened text
+     * @author Waliur Sun
+     */
+    private String limitText(
+            String value,
+            int maximumLength) {
+
+        if (value == null) {
+            return "";
+        }
+
+        if (value.length() <= maximumLength) {
+            return value;
+        }
+
+        if (maximumLength <= 3) {
+            return value.substring(
+                    0,
+                    maximumLength);
+        }
+
+        return value.substring(
+                0,
+                maximumLength - 3)
+                + "...";
+    }
+
+    /**
      * Writes one properly escaped row to a CSV file.
      *
      * @param writer writer connected to the CSV file
@@ -257,7 +478,8 @@ public class InsightReport {
             PrintWriter writer,
             String... values) {
 
-        StringBuilder row = new StringBuilder();
+        StringBuilder row =
+                new StringBuilder();
 
         for (int index = 0;
                 index < values.length;
@@ -275,11 +497,7 @@ public class InsightReport {
     }
 
     /**
-     * Escapes one value so it can be safely stored in a CSV field.
-     *
-     * <p>Quotation marks are doubled. Values containing commas,
-     * quotation marks, carriage returns, or line breaks are surrounded
-     * by quotation marks.</p>
+     * Escapes one value so it can safely be stored in a CSV field.
      *
      * @param value value to escape
      * @return safely escaped CSV value
@@ -292,7 +510,9 @@ public class InsightReport {
         }
 
         String escapedValue =
-                value.replace("\"", "\"\"");
+                value.replace(
+                        "\"",
+                        "\"\"");
 
         boolean requiresQuotationMarks =
                 escapedValue.contains(",")
@@ -310,10 +530,7 @@ public class InsightReport {
     }
 
     /**
-     * Formats a decimal value using two decimal places.
-     *
-     * <p>{@link Locale#US} ensures that CSV numbers use a period
-     * instead of a locale-dependent comma as the decimal separator.</p>
+     * Formats a decimal value for CSV export.
      *
      * @param value decimal value
      * @return value formatted with two decimal places
@@ -354,7 +571,9 @@ public class InsightReport {
      */
     private void validateFilePath(String filePath) {
 
-        if (filePath == null || filePath.isBlank()) {
+        if (filePath == null
+                || filePath.isBlank()) {
+
             throw new IllegalArgumentException(
                     "File path cannot be null or blank.");
         }

@@ -1,5 +1,8 @@
 package insights;
 
+import java.time.LocalDate;
+import java.util.Collections;
+import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
 
@@ -57,6 +60,7 @@ public record InsightResult(
     public InsightResult {
 
         validateYear(year);
+
         validateFinancialValues(
                 totalIncome,
                 totalExpenses,
@@ -72,23 +76,46 @@ public record InsightResult(
         validateCategoryPercentages(categoryPercentages);
         validateRecommendations(recommendations);
 
-        monthlyTotals = Map.copyOf(monthlyTotals);
-        categoryTotals = Map.copyOf(categoryTotals);
-        categoryPercentages = Map.copyOf(categoryPercentages);
+        /*
+         * Preserve insertion order while preventing callers
+         * from modifying the maps after construction.
+         */
+        monthlyTotals = Collections.unmodifiableMap(
+                new LinkedHashMap<>(monthlyTotals));
+
+        categoryTotals = Collections.unmodifiableMap(
+                new LinkedHashMap<>(categoryTotals));
+
+        categoryPercentages = Collections.unmodifiableMap(
+                new LinkedHashMap<>(categoryPercentages));
+
         recommendations = List.copyOf(recommendations);
     }
 
     /**
      * Validates the budget year.
      *
+     * <p>The year must be a positive calendar year and cannot be later
+     * than the current year.</p>
+     *
      * @param year year being analyzed
      * @author Waliur Sun
      */
     private static void validateYear(int year) {
 
-        if (year < 1900 || year > 2099) {
+        int currentYear =
+                LocalDate.now().getYear();
+
+        if (year < 1) {
             throw new IllegalArgumentException(
-                    "Year must be between 1900 and 2099.");
+                    "Year must be a positive calendar year.");
+        }
+
+        if (year > currentYear) {
+            throw new IllegalArgumentException(
+                    "Year cannot be later than the current year: "
+                            + currentYear
+                            + ".");
         }
     }
 
@@ -175,8 +202,10 @@ public record InsightResult(
 
         if (netBalance > 0) {
             expectedStatus = BudgetStatus.SURPLUS;
+
         } else if (netBalance < 0) {
             expectedStatus = BudgetStatus.DEFICIT;
+
         } else {
             expectedStatus = BudgetStatus.BALANCED;
         }
@@ -316,6 +345,9 @@ public record InsightResult(
             combinedPercentage += percentage;
         }
 
+        /*
+         * A small tolerance accounts for floating-point rounding.
+         */
         if (combinedPercentage > 100.01) {
             throw new IllegalArgumentException(
                     "Combined category percentages cannot exceed 100%.");
@@ -337,11 +369,13 @@ public record InsightResult(
         }
 
         for (String recommendation : recommendations) {
+
             if (recommendation == null
                     || recommendation.isBlank()) {
 
                 throw new IllegalArgumentException(
-                        "Recommendations cannot contain null or blank values.");
+                        "Recommendations cannot contain "
+                                + "null or blank values.");
             }
         }
     }

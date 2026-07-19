@@ -34,7 +34,7 @@ public class StorageModule implements AppModule {
 
     /**
      * Sentinel returned by {@link #promptForYear()} and
-     * {@link #promptForMonth()} to signal the user cancelled instead of
+     * {@link #promptForMonth()} to signal the user canceled instead of
      * entering a value. {@code 0} is a safe choice since it's never a
      * valid year ({@link Validation#MIN_YEAR} is 1900) or a valid month
      * (months run 1-12).
@@ -146,38 +146,25 @@ public class StorageModule implements AppModule {
 
     /**
      * Prompts for a year and prints every transaction in that year's
-     * budget, if one exists, as an aligned table.
+     * budget if one exists, as an aligned table.
      *
      * @bug Previously printed each transaction as a raw
      * {@code date | category | amount} line with no column alignment,
      * no currency symbol, and amounts shown with whatever decimal
      * precision {@code double} happened to produce (e.g. "45.5"). Now
-     * prints an aligned table with whole-dollar amounts.
+     * prints an aligned table with whole-dollar amounts. (FIXED)
      *
      * @param username the logged-in user's username
      * @author Mohammed
      */
     private void handleViewBudget(String username) {
-        int year = promptForYear();
-        if (year == CANCEL) {
-            System.out.println("Cancelled.");
+        Budget budget = promptForExistingBudget(username);
+        if (budget == null) {
             return;
         }
 
-        if (!budgetStorage.yearExists(username, year)) {
-            System.out.println("No budget found for " + year + ".");
-            return;
-        }
-
-        Budget budget;
-        try {
-            budget = budgetStorage.readBudget(username, year);
-        } catch (RuntimeException e) {
-            System.out.println("Could not read budget for " + year + ": " + e.getMessage());
-            return;
-        }
         List<Transaction> transactions = budget.getTransactions();
-        System.out.println("Budget for " + year + " (" + transactions.size() + " transactions):");
+        System.out.println("Budget for " + budget.getYear() + " (" + transactions.size() + " transactions):");
 
         if (transactions.isEmpty()) {
             return;
@@ -187,7 +174,40 @@ public class StorageModule implements AppModule {
     }
 
     /**
-     * Prints the given transactions as an aligned table with the date and
+     * Prompts for a year and loads that year's budget. Prints the reason and
+     * returns {@code null} if the user canceled, no budget exists for that
+     * year, or the budget could not be read.
+     *
+     * @param username the logged-in user's username
+     * @return the loaded budget, or {@code null} if none was loaded
+     * @author Fuad
+     */
+    private Budget promptForExistingBudget(String username) {
+        int year = promptForYear();
+        if (year == CANCEL) {
+            System.out.println("Cancelled.");
+            return null;
+        }
+
+        if (!budgetStorage.yearExists(username, year)) {
+            System.out.println("No budget found for " + year + ".");
+            return null;
+        }
+
+        try {
+            Budget budget = budgetStorage.readBudget(username, year);
+            if (budget == null) {
+                System.out.println("Could not read budget for " + year + ".");
+            }
+            return budget;
+        } catch (RuntimeException e) {
+            System.out.println("Could not read budget for " + year + ": " + e.getMessage());
+            return null;
+        }
+    }
+
+    /**
+     * Prints the given transactions as aligned table with the date and
      * category columns sized to fit their contents, and whole-dollar,
      * right-aligned amounts.
      *
@@ -235,23 +255,14 @@ public class StorageModule implements AppModule {
      * named {@code YYYY.csv} (see {@link Validation#isValidFileName}).
      * That redundant prompt was also the entry point for the "0 means
      * cancel" data-corruption bug documented on {@link #promptForYear()}
-     * — the year is now read directly from the file name instead.
+     * — the year is now read directly from the file name instead. (FIXED)
      *
      * @bug Previously relied on a single {@link Validation#isValidCsvFile}
      * check that folded together a bad file name, a missing file, an
      * unreadable file, and a bad header into one generic message — so a
      * non-existent path was reported as if the file existed with an
      * invalid format. The checks are now run separately so the message
-     * matches the actual cause.
-     *
-     * @bug Previously appended an imported file's transactions onto a year
-     * that already existed, with no warning and no de-duplication, then
-     * reported plain "Imported N transactions" as if nothing unusual had
-     * happened. Re-importing the same file silently doubled every total for
-     * that year and gave the user no indication of why the numbers were
-     * wrong. The user is now warned that the year is already populated and
-     * must explicitly choose to replace it, add to it, or cancel — see
-     * {@link #chooseImportMode(int, int, int)}.
+     * matches the actual cause. (FIXED)
      *
      * @param username the logged-in user's username
      * @author Mohammed
@@ -268,6 +279,12 @@ public class StorageModule implements AppModule {
         Path path = Path.of(filePath.trim());
         if (!Files.exists(path)) {
             System.out.println("Could not find a file at '" + filePath + "'. Please check the path and try again.");
+            return;
+        }
+
+        if (!Files.isRegularFile(path)) {
+            System.out.println("'" + filePath + "' is a folder, not a file. "
+                    + "Please give the path to a CSV file.");
             return;
         }
 
@@ -361,9 +378,9 @@ public class StorageModule implements AppModule {
      * incoming transactions should be applied.
      *
      * @param year          the year being imported into
-     * @param existingCount how many transactions are already stored for that year
+     * @param existingCount how many transactions are already stored for that year?
      * @param incomingCount how many valid transactions the file contains
-     * @return the chosen mode, or {@code null} if the user cancelled
+     * @return the chosen mode, or {@code null} if the user canceled
      * @author Mohammed
      */
     private ImportMode chooseImportMode(int year, int existingCount, int incomingCount) {
@@ -397,26 +414,13 @@ public class StorageModule implements AppModule {
      * @author Mohammed
      */
     private void handleExportCsv(String username) {
-        int year = promptForYear();
-        if (year == CANCEL) {
-            System.out.println("Cancelled.");
-            return;
-        }
-
-        if (!budgetStorage.yearExists(username, year)) {
-            System.out.println("No budget found for " + year + ".");
-            return;
-        }
-
-        Budget budget;
-        try {
-            budget = budgetStorage.readBudget(username, year);
-        } catch (RuntimeException e) {
-            System.out.println("Could not read budget for " + year + ": " + e.getMessage());
+        Budget budget = promptForExistingBudget(username);
+        if (budget == null) {
             return;
         }
 
         List<Transaction> toExport = chooseExportSubset(budget);
+
         if (toExport == null) {
             System.out.println("Cancelled.");
             return;
@@ -451,7 +455,7 @@ public class StorageModule implements AppModule {
      *
      * @param budget the budget to export from
      * @return the selected transactions, or {@code null} if the user
-     *         cancelled
+     *         canceled
      * @author Mohammed
      */
     private List<Transaction> chooseExportSubset(Budget budget) {
@@ -522,7 +526,7 @@ public class StorageModule implements AppModule {
      * as an explicit cancel signal instead of a literal year.
      *
      * @return the year entered by the user, or {@link #CANCEL} if
-     *         the user cancelled or entered something unparseable
+     *         the user canceled or entered something unparseable
      * @author Mohammed
      */
     private int promptForYear() {
@@ -539,7 +543,7 @@ public class StorageModule implements AppModule {
      * Prompts the user to enter a month (1-12), or {@code 0} to cancel.
      *
      * @return the month entered by the user, or {@link #CANCEL} if the
-     *         user cancelled or entered something invalid
+     *         user canceled or entered something invalid
      * @author Mohammed
      */
     private int promptForMonth() {

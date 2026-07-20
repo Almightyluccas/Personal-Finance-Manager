@@ -147,7 +147,7 @@ import java.security.NoSuchAlgorithmException;
 			Account currentUser = SessionManager.getCurrentUser();
 			if (currentUser != null){
 				try{
-					AccountFileManager.saveAccount(currentUser);
+					AccountFileManager.saveAccount(currentUser, currentUser.getUsername());
 					System.out.println("Account saved for "+ currentUser.getUsername());
 				}
 				catch (Exception e){
@@ -215,7 +215,7 @@ import java.security.NoSuchAlgorithmException;
 		
 		account.setSecretQuestion(question);
 		account.setSecretAnswer(hash(answer));
-		AccountFileManager.saveAccount(account);
+		AccountFileManager.saveAccount(account, account.getUsername());
 		return true;
 	}
 	
@@ -302,7 +302,7 @@ import java.security.NoSuchAlgorithmException;
 		}
 		
 		account.setHashedPassword(hash(newPassword));
-		AccountFileManager.saveAccount(account);
+		AccountFileManager.saveAccount(account, account.getUsername());
 		return true;
 	}
 	
@@ -342,7 +342,7 @@ import java.security.NoSuchAlgorithmException;
 		
 		// Update the account with the hashed password
 		account.setHashedPassword(hashedPassword);
-		AccountFileManager.saveAccount(account);
+		AccountFileManager.saveAccount(account, account.getUsername());
 		return true;
 	}
 	
@@ -364,8 +364,9 @@ import java.security.NoSuchAlgorithmException;
 		} else if (AccountFileManager.accountExists(newUsername)) {
 			return false; 
 		} else {
+			String oldUsername = account.getUsername();
 			account.setUsername(newUsername);
-			AccountFileManager.saveAccount(account);
+			AccountFileManager.saveAccount(account, oldUsername);
 			return true;
 		}
 	}

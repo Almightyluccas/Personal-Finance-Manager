@@ -4,6 +4,7 @@ import accounts.Account;
 import accounts.AccountService;
 import integration.AppModule;
 import integration.MenuUtil;
+import java.nio.file.Files;
 import java.nio.file.Path;
 import java.util.List;
 import validation.Validation;
@@ -33,7 +34,7 @@ public class StorageModule implements AppModule {
 
     /**
      * Sentinel returned by {@link #promptForYear()} and
-     * {@link #promptForMonth()} to signal the user cancelled instead of
+     * {@link #promptForMonth()} to signal the user canceled instead of
      * entering a value. {@code 0} is a safe choice since it's never a
      * valid year ({@link Validation#MIN_YEAR} is 1900) or a valid month
      * (months run 1-12).
@@ -145,38 +146,25 @@ public class StorageModule implements AppModule {
 
     /**
      * Prompts for a year and prints every transaction in that year's
-     * budget, if one exists, as an aligned table.
+     * budget if one exists, as an aligned table.
      *
      * @bug Previously printed each transaction as a raw
      * {@code date | category | amount} line with no column alignment,
      * no currency symbol, and amounts shown with whatever decimal
      * precision {@code double} happened to produce (e.g. "45.5"). Now
-     * prints an aligned table with whole-dollar amounts.
+     * prints an aligned table with whole-dollar amounts. (FIXED)
      *
      * @param username the logged-in user's username
      * @author Mohammed
      */
     private void handleViewBudget(String username) {
-        int year = promptForYear();
-        if (year == CANCEL) {
-            System.out.println("Cancelled.");
+        Budget budget = promptForExistingBudget(username);
+        if (budget == null) {
             return;
         }
 
-        if (!budgetStorage.yearExists(username, year)) {
-            System.out.println("No budget found for " + year + ".");
-            return;
-        }
-
-        Budget budget;
-        try {
-            budget = budgetStorage.readBudget(username, year);
-        } catch (RuntimeException e) {
-            System.out.println("Could not read budget for " + year + ": " + e.getMessage());
-            return;
-        }
         List<Transaction> transactions = budget.getTransactions();
-        System.out.println("Budget for " + year + " (" + transactions.size() + " transactions):");
+        System.out.println("Budget for " + budget.getYear() + " (" + transactions.size() + " transactions):");
 
         if (transactions.isEmpty()) {
             return;
@@ -186,7 +174,40 @@ public class StorageModule implements AppModule {
     }
 
     /**
-     * Prints the given transactions as an aligned table with the date and
+     * Prompts for a year and loads that year's budget. Prints the reason and
+     * returns {@code null} if the user canceled, no budget exists for that
+     * year, or the budget could not be read.
+     *
+     * @param username the logged-in user's username
+     * @return the loaded budget, or {@code null} if none was loaded
+     * @author Fuad
+     */
+    private Budget promptForExistingBudget(String username) {
+        int year = promptForYear();
+        if (year == CANCEL) {
+            System.out.println("Cancelled.");
+            return null;
+        }
+
+        if (!budgetStorage.yearExists(username, year)) {
+            System.out.println("No budget found for " + year + ".");
+            return null;
+        }
+
+        try {
+            Budget budget = budgetStorage.readBudget(username, year);
+            if (budget == null) {
+                System.out.println("Could not read budget for " + year + ".");
+            }
+            return budget;
+        } catch (RuntimeException e) {
+            System.out.println("Could not read budget for " + year + ": " + e.getMessage());
+            return null;
+        }
+    }
+
+    /**
+     * Prints the given transactions as aligned table with the date and
      * category columns sized to fit their contents, and whole-dollar,
      * right-aligned amounts.
      *
@@ -226,7 +247,7 @@ public class StorageModule implements AppModule {
 
     /**
      * Prompts for a CSV file path, parses and filters its transactions,
-     * then merges them into the budget for the year encoded in the file
+     * then writes them into the budget for the year encoded in the file
      * name (creating the budget if it doesn't already exist).
      *
      * @bug Previously prompted for the year separately from the file
@@ -234,7 +255,14 @@ public class StorageModule implements AppModule {
      * named {@code YYYY.csv} (see {@link Validation#isValidFileName}).
      * That redundant prompt was also the entry point for the "0 means
      * cancel" data-corruption bug documented on {@link #promptForYear()}
-     * — the year is now read directly from the file name instead.
+     * — the year is now read directly from the file name instead. (FIXED)
+     *
+     * @bug Previously relied on a single {@link Validation#isValidCsvFile}
+     * check that folded together a bad file name, a missing file, an
+     * unreadable file, and a bad header into one generic message — so a
+     * non-existent path was reported as if the file existed with an
+     * invalid format. The checks are now run separately so the message
+     * matches the actual cause. (FIXED)
      *
      * @param username the logged-in user's username
      * @author Mohammed
@@ -242,9 +270,32 @@ public class StorageModule implements AppModule {
     private void handleImportCsv(String username) {
         String filePath = MenuUtil.promptString("Path to CSV file");
 
+        if (!Validation.isValidFileName(filePath)) {
+            System.out.println("'" + filePath + "' is not a valid budget CSV file name. "
+                    + "It must be named YYYY.csv, e.g. \"2025.csv\".");
+            return;
+        }
+
+        Path path = Path.of(filePath.trim());
+        if (!Files.exists(path)) {
+            System.out.println("Could not find a file at '" + filePath + "'. Please check the path and try again.");
+            return;
+        }
+
+        if (!Files.isRegularFile(path)) {
+            System.out.println("'" + filePath + "' is a folder, not a file. "
+                    + "Please give the path to a CSV file.");
+            return;
+        }
+
+        if (!Files.isReadable(path)) {
+            System.out.println("'" + filePath + "' could not be read. "
+                    + "Check that the file isn't open elsewhere and that you have permission to read it.");
+            return;
+        }
+
         if (!Validation.isValidCsvFile(filePath)) {
-            System.out.println("'" + filePath + "' is not a valid budget CSV file. "
-                    + "It must be named YYYY.csv, be readable, and start with the header \""
+            System.out.println("'" + filePath + "' does not start with the required header \""
                     + Validation.VALID_HEADER + "\".");
             return;
         }
@@ -261,29 +312,89 @@ public class StorageModule implements AppModule {
             return;
         }
 
+        if (valid.isEmpty()) {
+            System.out.println("No valid transactions found in '" + filePath + "'. Nothing was imported.");
+            return;
+        }
+
         String baseName = Path.of(filePath).getFileName().toString();
         int year = Integer.parseInt(baseName.substring(0, 4));
 
         try {
-            Budget budget = budgetStorage.yearExists(username, year)
+            Budget existing = budgetStorage.yearExists(username, year)
                     ? budgetStorage.readBudget(username, year)
-                    : new Budget(year);
+                    : null;
 
+            if (existing == null) {
+                Budget budget = new Budget(year);
+                for (Transaction t : valid) {
+                    budget.addTransaction(t);
+                }
+                budgetStorage.createBudget(username, budget);
+                System.out.println("Imported " + valid.size() + " transaction(s) into " + year + ".");
+                return;
+            }
+
+            int existingCount = existing.getTransactions().size();
+            ImportMode mode = chooseImportMode(year, existingCount, valid.size());
+            if (mode == null) {
+                System.out.println("Cancelled. " + year + " was left unchanged.");
+                return;
+            }
+
+            Budget budget = (mode == ImportMode.REPLACE) ? new Budget(year) : existing;
             for (Transaction t : valid) {
                 budget.addTransaction(t);
             }
+            budgetStorage.updateBudget(username, budget);
 
-            if (budgetStorage.yearExists(username, year)) {
-                budgetStorage.updateBudget(username, budget);
+            if (mode == ImportMode.REPLACE) {
+                System.out.println("Replaced " + year + ": " + existingCount
+                        + " transaction(s) removed, " + valid.size() + " imported.");
             } else {
-                budgetStorage.createBudget(username, budget);
+                System.out.println("Added " + valid.size() + " transaction(s) to " + year
+                        + " (" + budget.getTransactions().size() + " total).");
             }
         } catch (RuntimeException e) {
             System.out.println("Could not import transactions into " + year + ": " + e.getMessage());
-            return;
         }
+    }
 
-        System.out.println("Imported " + valid.size() + " transactions into " + year + ".");
+    /**
+     * The two ways an import can be applied to a year that already has
+     * transactions stored for it.
+     *
+     * @author Mohammed
+     */
+    private enum ImportMode {
+        /** Discard the stored transactions and keep only the imported ones. */
+        REPLACE,
+        /** Keep the stored transactions and append the imported ones. */
+        ADD
+    }
+
+    /**
+     * Warns that the target year is already populated and asks how the
+     * incoming transactions should be applied.
+     *
+     * @param year          the year being imported into
+     * @param existingCount how many transactions are already stored for that year?
+     * @param incomingCount how many valid transactions the file contains
+     * @return the chosen mode, or {@code null} if the user canceled
+     * @author Mohammed
+     */
+    private ImportMode chooseImportMode(int year, int existingCount, int incomingCount) {
+        String choice = MenuUtil.promptChoice(
+                year + " already has " + existingCount + " transaction(s)",
+                "1. Replace them with the " + incomingCount + " in this file",
+                "2. Add this file's " + incomingCount + " to them",
+                "0. Cancel");
+
+        return switch (choice) {
+            case "1" -> ImportMode.REPLACE;
+            case "2" -> ImportMode.ADD;
+            default -> null;
+        };
     }
 
     /**
@@ -303,26 +414,13 @@ public class StorageModule implements AppModule {
      * @author Mohammed
      */
     private void handleExportCsv(String username) {
-        int year = promptForYear();
-        if (year == CANCEL) {
-            System.out.println("Cancelled.");
-            return;
-        }
-
-        if (!budgetStorage.yearExists(username, year)) {
-            System.out.println("No budget found for " + year + ".");
-            return;
-        }
-
-        Budget budget;
-        try {
-            budget = budgetStorage.readBudget(username, year);
-        } catch (RuntimeException e) {
-            System.out.println("Could not read budget for " + year + ": " + e.getMessage());
+        Budget budget = promptForExistingBudget(username);
+        if (budget == null) {
             return;
         }
 
         List<Transaction> toExport = chooseExportSubset(budget);
+
         if (toExport == null) {
             System.out.println("Cancelled.");
             return;
@@ -334,7 +432,20 @@ public class StorageModule implements AppModule {
         }
 
         String filePath = MenuUtil.promptString("Destination file path");
-        csvExporter.writeReportToCsv(toExport, filePath);
+
+        try {
+            if (Files.exists(Path.of(filePath))) {
+                if (!MenuUtil.promptYesNo("'" + filePath + "' already exists. Overwrite it?")) {
+                    System.out.println("Cancelled.");
+                    return;
+                }
+            }
+            csvExporter.writeReportToCsv(toExport, filePath);
+        } catch (RuntimeException e) {
+            System.out.println("Could not export to '" + filePath + "': " + e.getMessage());
+            return;
+        }
+
         System.out.println("Exported " + toExport.size() + " transaction(s) to " + filePath + ".");
     }
 
@@ -344,7 +455,7 @@ public class StorageModule implements AppModule {
      *
      * @param budget the budget to export from
      * @return the selected transactions, or {@code null} if the user
-     *         cancelled
+     *         canceled
      * @author Mohammed
      */
     private List<Transaction> chooseExportSubset(Budget budget) {
@@ -415,7 +526,7 @@ public class StorageModule implements AppModule {
      * as an explicit cancel signal instead of a literal year.
      *
      * @return the year entered by the user, or {@link #CANCEL} if
-     *         the user cancelled or entered something unparseable
+     *         the user canceled or entered something unparseable
      * @author Mohammed
      */
     private int promptForYear() {
@@ -432,7 +543,7 @@ public class StorageModule implements AppModule {
      * Prompts the user to enter a month (1-12), or {@code 0} to cancel.
      *
      * @return the month entered by the user, or {@link #CANCEL} if the
-     *         user cancelled or entered something invalid
+     *         user canceled or entered something invalid
      * @author Mohammed
      */
     private int promptForMonth() {

@@ -10,7 +10,7 @@ package reports;
  * </p>
  *
  * @author Alyssa Johnson
- * @version 1.0
+ * @version 1.1
  * @since 1.0
  */
 public enum OutputType {
@@ -25,9 +25,6 @@ public enum OutputType {
      */
     CSV("CSV");
 
-    /**
-     * Stores a friendly label that can be shown in menus or messages.
-     */
     private final String displayName;
 
     /**
@@ -36,10 +33,7 @@ public enum OutputType {
      * @param displayName the user-friendly name for the output type
      */
     OutputType(String displayName) {
-
-        // This value is temporary and simple, but it avoids hard-coded labels elsewhere.
         this.displayName = displayName;
-
     }
 
     /**
@@ -48,10 +42,7 @@ public enum OutputType {
      * @return the display name for this output type
      */
     public String getDisplayName() {
-
-        // Return the label so menus can show "Console" instead of the enum name "CONSOLE".
         return displayName;
-
     }
 
     /**
@@ -61,10 +52,6 @@ public enum OutputType {
      */
     @Override
     public String toString() {
-
-        // Keeping toString readable is helpful for simple print statements in early testing.
         return displayName;
-
     }
-
 }

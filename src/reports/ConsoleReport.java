@@ -1,170 +1,205 @@
 package reports;
 
+import integration.MenuUtil;
+import java.util.List;
+import storage.Budget;
+
 /**
- * Displays financial reports to the console for the Personal Finance Manager
- * (PFM) application.
+ * Displays financial reports to the console for the Personal Finance Manager.
  *
  * <p>
- * This class is responsible for presenting formatted report information to the
- * user through the console interface. Actual formatting and printing logic will
- * be implemented during development.
+ * This class presents annual, monthly, category, and summary reports using
+ * stored budget data loaded by the Reports module.
  * </p>
  *
  * @author Alyssa Johnson
- * @version 1.0
+ * @version 2.0
  * @since 1.0
  */
 public class ConsoleReport {
 
+    private static final String NO_DATA_MESSAGE = "No transactions are available for this report.";
+
+    private final ReportFormatter formatter;
+
     /**
-     * Constructs a new ConsoleReport object.
+     * Creates a new ConsoleReport.
      */
     public ConsoleReport() {
-
-        // No setup is needed yet because this class only prints placeholder data.
-        // TODO: Add fields here later if ReportManager passes prepared report data.
-
+        this(new ReportFormatter());
     }
 
     /**
-     * Prints the annual financial report to the console.
+     * Creates a new ConsoleReport using the provided formatter.
      *
-     * <p>
-     * Displays yearly income, expenses, category totals,
-     * and overall budget performance.
-     * </p>
+     * @param formatter shared formatter for consistent report output
      */
-    public void printAnnualReport() {
-
-        // TODO: Replace this placeholder once ReportManager provides real report data.
-        printReportHeader();
-
-        // For now we print sample output so the class can be tested independently.
-        System.out.println("ANNUAL FINANCIAL REPORT - SAMPLE YEAR 2026");
-        System.out.println("------------------------------------------");
-        System.out.println("Total Income:           $52,000.00");
-        System.out.println("Total Expenses:         $39,750.00");
-        System.out.println("Net Savings:            $12,250.00");
-        System.out.println("Savings Rate:                23.6%");
-        System.out.println();
-
-        // These sample lines show the kind of category information a full report may include.
-        System.out.println("Top Categories");
-        System.out.println("  Income  - Paycheck:   $48,000.00");
-        System.out.println("  Expense - Housing:    $18,000.00");
-        System.out.println("  Expense - Food:        $6,200.00");
-        System.out.println();
-
-        // Future implementation should retrieve formatted data from the reports module.
-        System.out.println("Budget Result: Surplus of $12,250.00");
-        System.out.println("==========================================");
-
+    ConsoleReport(ReportFormatter formatter) {
+        this.formatter = formatter == null ? new ReportFormatter() : formatter;
     }
 
     /**
-     * Prints the monthly financial summary.
+     * Prints an annual financial report.
      *
-     * <p>
-     * Displays income, expenses, and net balance
-     * for a selected month.
-     * </p>
+     * @param budget the budget to display
      */
-    public void printMonthlySummary() {
+    public void printAnnualReport(Budget budget) {
+        MenuUtil.printTitle("Annual Financial Report");
 
-        // TODO: Replace this placeholder once monthly data is available from Storage.
-        printReportHeader();
+        if (budget == null) {
+            System.out.println("No budget data is available for the selected year.");
+            return;
+        }
 
-        // The month is hard-coded temporarily so this method has visible behavior.
-        System.out.println("MONTHLY SUMMARY - SAMPLE MONTH JANUARY 2026");
-        System.out.println("-------------------------------------------");
-        System.out.println("Income:                 $4,250.00");
-        System.out.println("Expenses:               $3,180.00");
-        System.out.println("Net Balance:            $1,070.00");
+        ReportAnalytics.ReportTotals annual = ReportAnalytics.forBudget(budget);
+        printSummaryBlock(annual, "Year", String.valueOf(annual.year()));
+
+        if (annual.transactionCount() == 0) {
+            System.out.println(NO_DATA_MESSAGE);
+            return;
+        }
+
         System.out.println();
-
-        // This short table demonstrates how a real monthly summary might be formatted.
-        System.out.println("Category Breakdown");
-        System.out.println("  Housing:              $1,500.00");
-        System.out.println("  Groceries:              $520.00");
-        System.out.println("  Transportation:         $260.00");
-        System.out.println("  Entertainment:          $175.00");
-        System.out.println("===========================================");
-
+        System.out.println(formatter.formatSectionHeading("Category Breakdown"));
+        printCategoryTable(annual.categories());
     }
 
     /**
-     * Prints yearly totals for each income and expense category.
+     * Prints a monthly summary.
      *
-     * <p>
-     * Displays organized category totals in a readable format.
-     * </p>
+     * @param budget the budget
+     * @param month the month (1-12)
      */
-    public void printCategoryTotals() {
+    public void printMonthlySummary(Budget budget, int month) {
+        MenuUtil.printTitle("Monthly Financial Summary");
 
-        // TODO: Replace this placeholder once category totals are calculated by ReportManager.
-        printReportHeader();
+        if (budget == null) {
+            System.out.println("No budget data is available for the selected year.");
+            return;
+        }
 
-        // This sample table keeps columns aligned so the console output is easy to read.
-        System.out.println("YEARLY CATEGORY TOTALS - SAMPLE DATA");
-        System.out.println("------------------------------------");
-        System.out.println("Category             Type        Total");
-        System.out.println("------------------------------------");
-        System.out.println("Paycheck             Income      $48,000.00");
-        System.out.println("Freelance            Income       $4,000.00");
-        System.out.println("Housing              Expense     $18,000.00");
-        System.out.println("Food                 Expense      $6,200.00");
-        System.out.println("Utilities            Expense      $2,400.00");
-        System.out.println("Transportation       Expense      $3,150.00");
-        System.out.println("====================================");
+        if (!ReportAnalytics.isValidMonth(month)) {
+            System.out.println("Please choose a month between 1 and 12.");
+            return;
+        }
 
+        ReportAnalytics.ReportTotals monthly = ReportAnalytics.forMonth(budget, month);
+        printSummaryBlock(
+                monthly,
+                "Month",
+                formatter.formatMonth(monthly.month()),
+                "Year",
+                String.valueOf(monthly.year()));
+
+        if (monthly.transactionCount() == 0) {
+            System.out.println(NO_DATA_MESSAGE);
+            return;
+        }
+
+        System.out.println();
+        System.out.println(formatter.formatSectionHeading("Transactions"));
+        printTransactionTable(monthly.transactions());
     }
 
     /**
-     * Prints the overall budget performance summary.
+     * Prints yearly category totals.
      *
-     * <p>
-     * Displays whether the user finished the year
-     * with a surplus or deficit.
-     * </p>
+     * @param budget the budget
      */
-    public void printBudgetSummary() {
+    public void printCategoryTotals(Budget budget) {
+        MenuUtil.printTitle("Category Totals");
 
-        // TODO: Replace this placeholder once budget goals are provided by the budget module.
-        printReportHeader();
+        if (budget == null) {
+            System.out.println("No budget data is available for the selected year.");
+            return;
+        }
 
-        // These values are temporary examples to show the intended report layout.
-        System.out.println("BUDGET PERFORMANCE SUMMARY - SAMPLE DATA");
-        System.out.println("----------------------------------------");
-        System.out.println("Planned Annual Budget:  $42,000.00");
-        System.out.println("Actual Annual Spending: $39,750.00");
-        System.out.println("Difference:              $2,250.00 under budget");
+        ReportAnalytics.ReportTotals totals = ReportAnalytics.forBudget(budget);
+        System.out.println(formatter.formatLabelValue("Year", String.valueOf(totals.year())));
+        System.out.println(formatter.formatLabelValue("Transactions", String.valueOf(totals.transactionCount())));
         System.out.println();
+        printCategoryTable(totals.categories());
+        System.out.println();
+        System.out.println(formatter.formatLabelValue("Overall Income", formatter.formatCurrency(totals.income())));
+        System.out.println(formatter.formatLabelValue("Overall Expenses", formatter.formatCurrency(totals.expenses())));
+        System.out.println(formatter.formatLabelValue("Overall Net", formatter.formatSignedCurrency(totals.net())));
 
-        // This explanation is helpful for classmates testing the class before integration.
-        System.out.println("Status: Great job! The sample user finished under budget.");
-        System.out.println("TODO: Connect this message to real budget performance logic.");
-        System.out.println("========================================");
-
+        if (totals.transactionCount() == 0) {
+            System.out.println();
+            System.out.println(NO_DATA_MESSAGE);
+        }
     }
 
     /**
-     * Prints the report title and section headings.
+     * Prints a budget summary.
      *
-     * <p>
-     * Creates a consistent header for all report types.
-     * </p>
+     * @param budget the budget
      */
-    public void printReportHeader() {
+    public void printBudgetSummary(Budget budget) {
+        MenuUtil.printTitle("Budget Performance Summary");
 
-        // This shared header gives every console report a consistent starting point.
-        System.out.println();
-        System.out.println("==========================================");
-        System.out.println("       Personal Finance Manager Report");
-        System.out.println("==========================================");
-        System.out.println("NOTE: Placeholder data is shown for now.");
-        System.out.println("TODO: Replace sample values after Integration connects real data.");
-        System.out.println();
+        if (budget == null) {
+            System.out.println("No budget data is available for the selected year.");
+            return;
+        }
 
+        ReportAnalytics.ReportTotals summary = ReportAnalytics.forBudget(budget);
+        printSummaryBlock(summary, "Year", String.valueOf(summary.year()));
+        System.out.println();
+        System.out.println(formatter.buildPerformanceMessage(summary));
     }
 
+    private void printSummaryBlock(
+            ReportAnalytics.ReportTotals totals,
+            String firstLabel,
+            String firstValue) {
+        printSummaryBlock(totals, firstLabel, firstValue, null, null);
+    }
+
+    private void printSummaryBlock(
+            ReportAnalytics.ReportTotals totals,
+            String firstLabel,
+            String firstValue,
+            String secondLabel,
+            String secondValue) {
+        System.out.println(formatter.formatLabelValue(firstLabel, firstValue));
+        if (secondLabel != null && secondValue != null) {
+            System.out.println(formatter.formatLabelValue(secondLabel, secondValue));
+        }
+        System.out.println(formatter.formatLabelValue("Income", formatter.formatCurrency(totals.income())));
+        System.out.println(formatter.formatLabelValue("Expenses", formatter.formatCurrency(totals.expenses())));
+        System.out.println(formatter.formatLabelValue("Net Balance", formatter.formatSignedCurrency(totals.net())));
+        System.out.println(formatter.formatLabelValue("Status", formatter.formatStatus(totals.net())));
+        System.out.println(formatter.formatLabelValue("Transactions", String.valueOf(totals.transactionCount())));
+    }
+
+    private void printTransactionTable(List<ReportAnalytics.ReportRow> rows) {
+        String format = "%-12s  %-18s  %-8s  %14s%n";
+        System.out.printf(format, "Date", "Category", "Type", "Amount");
+        System.out.printf(format, "------------", "------------------", "--------", "--------------");
+
+        for (ReportAnalytics.ReportRow row : rows) {
+            System.out.printf(
+                    format,
+                    formatter.formatDate(row.date()),
+                    formatter.normalizeCategory(row.category()),
+                    row.amount() >= 0 ? "Income" : "Expense",
+                    formatter.formatCurrency(Math.abs(row.amount())));
+        }
+    }
+
+    private void printCategoryTable(List<ReportAnalytics.CategoryTotals> categories) {
+        String format = "%-18s  %14s  %14s  %14s%n";
+        System.out.printf(format, "Category", "Income", "Expenses", "Net");
+        System.out.printf(format, "------------------", "--------------", "--------------", "--------------");
+
+        for (ReportAnalytics.CategoryTotals category : categories) {
+            System.out.printf(
+                    format,
+                    category.category(),
+                    formatter.formatCurrency(category.income()),
+                    formatter.formatCurrency(category.expenses()),
+                    formatter.formatSignedCurrency(category.net()));
+        }
+    }
 }

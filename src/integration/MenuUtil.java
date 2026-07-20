@@ -1,6 +1,7 @@
 package integration;
 
 import java.util.Scanner;
+import java.util.function.Function;
 
 /**
  * Stateless static helper providing common console prompting utilities
@@ -97,6 +98,31 @@ public final class MenuUtil {
     }
 
     /**
+     * Prompts repeatedly until errorFor returns null (valid), or returns
+     * null if the user enters "0" to cancel.
+     *
+     * @param prompt   the prompt shown to the user
+     * @param errorFor returns a message describing why the input is invalid,
+     *                 or null if the input is acceptable
+     * @return the valid input, or null if the user cancelled
+     * @author Luccas Amorim
+     */
+    public static String promptUntilValid(String prompt, Function<String, String> errorFor) {
+        while (true) {
+            String input = MenuUtil.promptString(prompt + " (or 0 to cancel)");
+            if (input.equals("0")) {
+                return null;
+            }
+            String error = errorFor.apply(input);
+            if (error == null) {
+                return input;
+            }
+            System.out.println(error);
+        }
+    }
+
+
+    /**
      * Prompts the user for a free-form string input.
      *
      * @param prompt the prompt text to display
@@ -118,6 +144,8 @@ public final class MenuUtil {
         int right = totalPadding - left;
         return " ".repeat(left) + text + " ".repeat(right);
     }
+
+
 
     /**
      * Left-aligns text, padding with spaces on the right to fill the width.

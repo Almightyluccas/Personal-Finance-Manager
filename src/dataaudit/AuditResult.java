@@ -96,11 +96,22 @@ public class AuditResult {
 
 	/**
 	 * Returns the number of anomalous transactions recorded.
-	 * 
-	 * @return the anomaly count	 
-	 * @author Sazedur Khan 
+	 *
+	 * @return the anomaly count
+	 * @author Sazedur Khan
 	 */
 	public int getAnomalyCount() {
 		return anomalies.size();
+	}
+
+	/**
+	 * Returns the list of anomalous transactions found during the audit.
+	 *
+	 * @return the anomalous transactions, each represented as a
+	 * String array of date, category, and amount.
+	 * @author Sazedur Khan
+	 */
+	public List<String[]> getAnomalies() {
+		return anomalies;
 	}
 }

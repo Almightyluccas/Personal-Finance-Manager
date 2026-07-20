@@ -9,6 +9,7 @@ import java.nio.file.Path;
 import java.time.LocalDate;
 import java.time.format.DateTimeFormatter;
 import java.time.format.DateTimeParseException;
+import java.time.format.ResolverStyle;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Set;
@@ -23,7 +24,8 @@ import java.util.regex.Pattern;
 public class CsvImporter {
 
     private static final String EXPECTED_HEADER = "Date,Category,Amount";
-    private static final DateTimeFormatter DATE_FORMAT = DateTimeFormatter.ofPattern("MM/dd/yyyy");
+    private static final DateTimeFormatter DATE_FORMAT =
+        DateTimeFormatter.ofPattern("MM/dd/uuuu").withResolverStyle(ResolverStyle.STRICT);
     private static final int PREVIEW_LINE_LIMIT = 20;
 
     /**

@@ -1,8 +1,8 @@
 package dataaudit;
  
 import java.util.ArrayList;
-import java.util.HashSet;
 import java.util.HashMap;
+import java.util.HashSet;
  
 /**
  * Detects unusual financial transactions by comparing each entry
@@ -86,10 +86,8 @@ public class AnomalyChecker {
             double average = calculateAverageAmount(amounts);
  
             if (isAnomalous(amount, average)) {
-            	if (isAnomalous(amount, average)) {
-            	    result.addAnomaly(transaction);
-            	    anomalyFound = true;
-            	}
+                result.addAnomaly(transaction);
+                anomalyFound = true;
             }
         }
  

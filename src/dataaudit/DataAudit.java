@@ -85,15 +85,15 @@ public class DataAudit implements AppModule {
 	            new String[storedTransactions.size()];
 	    String[] categories =
 	            new String[storedTransactions.size()];
-	    int[] amounts =
-	            new int[storedTransactions.size()];
+	    double[] amounts =
+	            new double[storedTransactions.size()];
 
 	    for (int i = 0; i < storedTransactions.size(); i++) {
 	        Transaction transaction = storedTransactions.get(i);
 
 	        dates[i] = transaction.date().toString();
 	        categories[i] = transaction.category();
-	        amounts[i] = (int) Math.round(transaction.amount());
+	        amounts[i] = transaction.amount();
 	    }
 
 	    ArrayList<String[]> auditTransactions =
@@ -237,7 +237,8 @@ public class DataAudit implements AppModule {
 
 	    for (String[] anomaly : result.getAnomalies()) {
 	        boolean remove = MenuUtil.promptYesNo("Remove anomaly "
-	                + anomaly[0] + " | " + anomaly[1] + " | $" + anomaly[2]);
+	                + anomaly[0] + " | " + anomaly[1] + " | $"
+	                + AuditResult.formatAmount(anomaly[2]));
 
 	        if (remove && removeMatchingTransaction(budget, anomaly)) {
 	            changed = true;
@@ -252,7 +253,7 @@ public class DataAudit implements AppModule {
 
 	/**
 	 * Removes the first transaction in the budget matching the given
-	 * anomaly's date, category, and rounded amount.
+	 * anomaly's date, category, and exact amount.
 	 *
 	 * @param budget  the budget to remove the transaction from
 	 * @param anomaly the anomaly to match, as [date, category, amount]
@@ -262,7 +263,7 @@ public class DataAudit implements AppModule {
 	private boolean removeMatchingTransaction(Budget budget, String[] anomaly) {
 	    LocalDate date = LocalDate.parse(anomaly[0]);
 	    String category = anomaly[1];
-	    int amount = (int) Math.round(Double.parseDouble(anomaly[2]));
+	    double amount = Double.parseDouble(anomaly[2]);
 
 	    Iterator<Transaction> iterator = budget.getTransactions().iterator();
 
@@ -271,7 +272,7 @@ public class DataAudit implements AppModule {
 
 	        if (transaction.date().equals(date)
 	                && transaction.category().equals(category)
-	                && (int) Math.round(transaction.amount()) == amount) {
+	                && transaction.amount() == amount) {
 	            iterator.remove();
 	            return true;
 	        }
@@ -290,7 +291,7 @@ public class DataAudit implements AppModule {
      * @author Syed Karim
      */
     public ArrayList<String[]> createTransactionList(
-            String[] dates, String[] categories, int[] amounts) {
+            String[] dates, String[] categories, double[] amounts) {
 
         ArrayList<String[]> transactions = new ArrayList<>();
 
@@ -316,7 +317,7 @@ public class DataAudit implements AppModule {
 	 *@param result object that stores audit findings
 	 * @author Muhaymen Dhali
 	 */
-	public void findDuplicates(String[] dates, String[] categories, int[] amounts, AuditResult result) {
+	public void findDuplicates(String[] dates, String[] categories, double[] amounts, AuditResult result) {
 		DuplicateChecker checker = new DuplicateChecker();
         checker.detectDuplicates(dates, categories, amounts, result);
 		

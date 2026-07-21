@@ -61,16 +61,17 @@ public final class AccountFileManager {
             String secretAnswer
     ) {
         Account account = new Account(username, hashedPassword, secretQuestion, secretAnswer);
-        saveAccount(account);
+        saveAccount(account, username);
     }
 
     /**
      * Saves the given account object to the file system.
-     *
+     * @bug If the username changed, a new account would be created rather than
+     * changing the info in the current account (FIXED)
      * @param account the account to save
      * @author Fuad
      */
-    public static void saveAccount(Account account) {
+    public static void saveAccount(Account account, String username) {
         if (account == null) {
             throw new IllegalArgumentException("Account cannot be null.");
         }
@@ -91,7 +92,7 @@ public final class AccountFileManager {
                 Account existingAccount = parseAccount(lines.get(i));
 
                 if (existingAccount != null
-                        && existingAccount.getUsername().equals(account.getUsername())) {
+                        && existingAccount.getUsername().equals(username)) {
                     updatedLines.add(toCsvLine(account));
                     wasUpdated = true;
                 } else {

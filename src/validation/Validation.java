@@ -114,6 +114,9 @@ public class Validation
         	return false;
 
     	secretQuestion = secretQuestion.trim();
+		
+		if (secretQuestion.isBlank())
+        	return false;
 
     	return secretQuestion.length() >= 10
         	&& secretQuestion.length() <= 100;
@@ -137,6 +140,9 @@ public class Validation
         	return false;
 
     	secretAnswer = secretAnswer.trim();
+
+		if (secretAnswer.isBlank())
+        	return false;
 
     	return secretAnswer.length() >= 2
         	&& secretAnswer.length() <= 100;

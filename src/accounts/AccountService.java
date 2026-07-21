@@ -1,7 +1,6 @@
 package accounts;
 import validation.Validation;
 import storage.AccountFileManager;
-import java.util.Scanner;
 import java.security.MessageDigest;
 import java.security.NoSuchAlgorithmException;
 
@@ -80,25 +79,18 @@ import java.security.NoSuchAlgorithmException;
 		// will be hashed
 		
 		if (!Validation.isValidUsername(username)) {
-			System.out.println("Username \"" + username + "\" failed:  " + missingUserReq(username));
 			return false;
 		}
 		if (AccountFileManager.accountExists(username)) {
-			System.out.println("Username \"" + username + "\" failed: Username alredy taken.");
 			return false; 
 		}
 		if (!Validation.isValidPassword(password)) {
-			System.out.println("Password \"" + password + "\" failed: " + missingPasswordReq(password));
 			return false;
 		}
 		if (!Validation.isValidSecretQuestion(secretQuestion)) {
-			System.out.println("Secret question \"" + secretQuestion +"\" failed:\n"
-					+ "Question must be between 10 and 100 characters in length.");
 			return false;
 		}
 		if (!Validation.isValidSecretAnswer(secretAnswer)) {
-			System.out.println("Secret answer \"" + secretAnswer + "\" failed:\n"
-					+ "Answer must be between 2 and 100 characters in length.");
 			return false;
 		}
 		
@@ -110,47 +102,6 @@ import java.security.NoSuchAlgorithmException;
 		return true;
 	
 	}
-	
-	/**
-	 * Finds why the username failed validation.
-	 * @param username the username that failed validation.
-	 * @return a meaningful message to why said username failed.
-	 * @author Dwann
-	 */
-	private static String missingUserReq(String username) {
-		if (username.length() < 4) {
-			return "Username must be at least 4 characters in length.";
-		} else if (username.length() > 20) {
-			return "Username must be no longer than 20 characters in length.";
-		} else if (username.matches(".*[^A-Za-z0-9_].*")){
-			if (username.contains(" "))
-				return "Username cannot contain spaces.";
-			return "Only letters, numbers, and underscores are allowed.";
-		}
-		
-		return null;
-	}
-	
-	/**
-	 * Finds why the password failed validation.
-	 * @param password the password that failed validation.
-	 * @return a meaningful message to why said username failed.
-	 * @author Dwann
-	 */
-	private static String missingPasswordReq(String password) {
-		if (password.length() < 8) {
-			return "Password must be at least 8 characters in length";
-		} else if (password.matches("^[^A-Z]*$")) {
-			return "Password must contain at least one uppercase letter";
-		} else if (password.matches("^[^a-z]*$")) {
-			return "Password must contain at least one lowercase letter";
-		} else if (password.matches("^\\D*$")) {
-			return "Password must contain at least one number";
-		}
-		
-		return null;
-	}
-	
 	
 	/**
 	 * logs in a user into an account
@@ -165,9 +116,11 @@ import java.security.NoSuchAlgorithmException;
 		//
 		// postconditions: The user can go to the next page set by integration to access their audits and related information.
 		
-		if (!AccountFileManager.accountExists(username))
+		/*if (!AccountFileManager.accountExists(username))
 			return false;
-		Account account = (Account) AccountFileManager.loadAccount(username);
+		Account account = (Account) AccountFileManager.loadAccount(username);*/
+		Account account = getAccountFromUsername(username);
+		if (account == null) return false;
 
 		String hashedInput = hash(password);
 		if(hashedInput.equals(account.getHashedPassword())){
@@ -194,7 +147,7 @@ import java.security.NoSuchAlgorithmException;
 			Account currentUser = SessionManager.getCurrentUser();
 			if (currentUser != null){
 				try{
-					AccountFileManager.saveAccount(currentUser);
+					AccountFileManager.saveAccount(currentUser, currentUser.getUsername());
 					System.out.println("Account saved for "+ currentUser.getUsername());
 				}
 				catch (Exception e){
@@ -212,49 +165,99 @@ import java.security.NoSuchAlgorithmException;
 	}
 	
 	/**
-	 * prompts the user to to answer their secret question. Prompts the user to change
-	 * their password if they answered correctly
+	 * gets the secret question for a given account, for Integration to display
+	 * before prompting the user for their answer
+	 * @param username the username to look up
+	 * @return the account's secret question, or null if no such account exists
 	 * @author Harmony
 	 */
-	
-	public static void forgotPassword() {
-		// requirements: The prompt requesting the user to answer their secret question
-		// must be called. Their answer must be correct.
-		// postcondition: The user is prompted to change their password.
-		
-		Scanner scanner = new Scanner(System.in);
-
-		System.out.print("Enter your username: ");
-		String username = scanner.nextLine();
-		
-		if (!AccountFileManager.accountExists(username)) {
-			System.err.print("Error: No such user exist with name " + username + ".");
-			scanner.close();
-			return;
+	public static String getSecretQuestion(String username) {
+		//Removed and replaced with method getAccountFromUsername()
+		/*if (!AccountFileManager.accountExists(username)) {
+			return null;
 		}
-
-		Account account = (Account) AccountFileManager.loadAccount(username);
-		
+		Account account = (Account) AccountFileManager.loadAccount(username);*/
+		Account account = getAccountFromUsername(username);
 		if (account == null) {
-		    System.out.println("No account found with that username.");
-		    scanner.close();
-		    return;
+			return null;
 		}
-
-		System.out.println(account.getSecretQuestion());
-		System.out.print("Enter your answer: ");
-		String answer = scanner.nextLine();
-
-		if (checkSecretAnswer(answer, account)) {
-		    System.out.print("Correct! Enter your new password: ");
-		    String newPassword = scanner.nextLine();
-		    changePassword(newPassword, account);
-		    System.out.println("Password updated successfully.");
-		} else {
-			System.out.println("Incorrect answer. Password reset denied.");
-		}
-		scanner.close();
+		return account.getSecretQuestion();
 	}
+	
+	/**
+	 * Changes the secret question and answer upon user request.
+	 * @param currentPassword the password to authenticate the user.
+	 * @param question The new secret question the user want's to set.
+	 * @param answer The answer to the new secret question.
+	 * @param account the account that will be effected by the changes.
+	 * @return Whether or not the change was successful.
+	 * @author Dwann
+	 */
+	public static boolean changeSecretQA(String currentPassword,
+										 String question,
+										 String answer,
+										 Account account) 
+	{
+		if (!hash(currentPassword).equals(account.getHashedPassword())) {
+			System.out.println("Error: The password entered is incorrect.");
+			return false;
+		}
+		
+		if(!Validation.isValidSecretQuestion(question)) {
+			System.out.println("Error: The secret question must be between 10 and 100 characters.");
+			return false;
+		}
+		
+		if(!Validation.isValidSecretAnswer(answer)) {
+			System.out.println("Error: The secret answer must be between 2 and 100 characters.");
+			return false;
+		}
+		
+		account.setSecretQuestion(question);
+		account.setSecretAnswer(hash(answer));
+		AccountFileManager.saveAccount(account, account.getUsername());
+		return true;
+	}
+	
+	/**
+	 * Gets an account from the username passed
+	 * @param username The user's username
+	 * @return an account object with the given username, or null if doesn't exist
+	 * @author Dwann
+	 */
+	public static Account getAccountFromUsername(String username) {
+		if (!AccountFileManager.accountExists(username)) {
+			System.out.println("Error: No account with username " + username + ".");
+			return null;
+		}
+		
+		Account account = (Account) AccountFileManager.loadAccount(username);
+		return account;
+	}
+	
+	/**
+	 * verifies the secret answer for a given account and, if correct, resets
+	 * the account's password to newPassword
+	 * @param username the username whose password is being reset
+	 * @param secretAnswer the answer supplied by the user
+	 * @param newPassword the new password to set if the answer is correct
+	 * @return whether or not the password reset was successful
+	 * @author Harmony
+	 */
+	/*public static boolean resetPassword(String username, String secretAnswer, String newPassword, String confirmedPassword) {
+		if (!AccountFileManager.accountExists(username)) {
+			return false;
+		}
+		Account account = (Account) AccountFileManager.loadAccount(username);
+		if (account == null) {
+			return false;
+		}
+		if (!checkSecretAnswer(secretAnswer, account)) {
+			return false;
+		}
+		
+		return changePassword(newPassword, confirmedPassword, account);
+	}*/
 
 	/**
 	 * verifies the secretAnswer from the user with the one in their account
@@ -263,19 +266,56 @@ import java.security.NoSuchAlgorithmException;
 	 * @return whether or not the answers matched
 	 * @author Harmony
 	 */
-	private static boolean checkSecretAnswer(String secretAnswer, Account account) {
+	public static boolean checkSecretAnswer(String secretAnswer, Account account) {
 		// postcondition: if the secret answer matches the accounts, the user can change whatever they need to accordingly.
-		return account.getSecretAnswer().equals(secretAnswer); 
+		if (secretAnswer == null || account.getSecretAnswer() == null) {
+			return false;
+		}
+		// normalize (trim + lowercase) before hashing so the check stays forgiving of
+		// case/whitespace, while still comparing hashed values like the password check does
+		String hashedInput = hash(secretAnswer); //removed trim() and toLowerCase() so the hash matches the one in the account when created.
+		return hashedInput != null && hashedInput.equals(account.getSecretAnswer());
+	}
+	/**
+	 * Changes the password for a user in their account settings.
+	 * @param current The users current password.
+	 * @param newPass The password the user wants to change to.
+	 * @param confirmedPass Confirmation of the users new password.
+	 * @param account The user's account, to set the new password.
+	 * @return Whether or not the password change was successful.
+	 * @author Dwann
+	 */
+	public static boolean changePassword(String current,
+										 String newPassword,
+										 String confirmedPassword,
+										 Account account) 
+	{
+		//verify the current password matches
+		if (!hash(current).equals(account.getHashedPassword())) {
+			System.out.println("Error: The current password entered is invalid.");
+			return false;
+		}
+		
+		if (!newPassword.equals(confirmedPassword)) {
+			System.out.println("Error: The passwords don\'t match.");
+			return false;
+		}
+		
+		account.setHashedPassword(hash(newPassword));
+		AccountFileManager.saveAccount(account, account.getUsername());
+		return true;
 	}
 	
 	/**
-	 * changes the password of a user's account
+	 * changes the password of a user's account from the previously forgotten one
 	 * @param newPassword the new password the user wants to set
+	 * @param confirmedPassword the double check to make sure the user entered the new password wanted
 	 * @param account the account of said user in question
 	 * @return whether or not the password change was succesful
 	 * @author Sakif
 	 */
-	private static boolean changePassword(String newPassword, Account account) {
+	
+	public static boolean changePassword(String newPassword, String confirmedPassword, Account account) {
 		// requirements: the new password must be valid. the password must then be hashed
 		//
 		// postconditions: the old password is replace with the new password. The password is updated in the CSV file.
@@ -284,21 +324,25 @@ import java.security.NoSuchAlgorithmException;
 		}
 		
 		if(!Validation.isValidPassword(newPassword)) {
-			System.err.println("Error: Invalid password format.");
+			System.out.println("Error: Invalid password format.");
 			return false;
 		}
 		
+		if (!newPassword.equals(confirmedPassword)) {
+			System.out.println("Error: The passwords don\'t match.");
+			return false;
+		}
 		
 		//hashing the new password
 		String hashedPassword = hash(newPassword);
 		if(hashedPassword == null) {
-			System.err.println("Error: failure to hash password.");
+			System.out.println("Error: failure to hash password.");
 			return false;
 		}
 		
 		// Update the account with the hashed password
 		account.setHashedPassword(hashedPassword);
-		AccountFileManager.saveAccount(account);
+		AccountFileManager.saveAccount(account, account.getUsername());
 		return true;
 	}
 	
@@ -316,13 +360,13 @@ import java.security.NoSuchAlgorithmException;
 		
 
 		if (!Validation.isValidUsername(newUsername)) {
-			System.out.println("Username \"" + newUsername + "\" failed:  " + missingUserReq(newUsername));
 			return false;
 		} else if (AccountFileManager.accountExists(newUsername)) {
-			System.out.println("Username \"" + newUsername + "\" failed: Username alredy taken.");
 			return false; 
 		} else {
+			String oldUsername = account.getUsername();
 			account.setUsername(newUsername);
+			AccountFileManager.saveAccount(account, oldUsername);
 			return true;
 		}
 	}

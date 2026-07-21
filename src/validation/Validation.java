@@ -56,7 +56,7 @@ public class Validation
 	 * Requirements:
 	 * - Cannot be null
 	 * - Must be between 4 and 20 characters
-	 * - May contain only letters, digits, and underscores
+	 * - May contain only ASCII letters, digits, and underscores
      *
      * @param username the username entered by the user
      * @return true if the username satisfies all username requirements;
@@ -77,7 +77,7 @@ public class Validation
      * Validates a user's password.
 	 * Requirements:
 	 * - Cannot be null
-  	 * - At least 8 characters
+  	 * - Between 8 and 64 characters
  	 * - Contains at least one uppercase letter
  	 * - Contains at least one lowercase letter
  	 * - Contains at least one digit
@@ -92,8 +92,10 @@ public class Validation
     	if (password == null)
         	return false;
 
+    	password = password.trim();
+
     	return password.matches(
-        	"^(?=.*[a-z])(?=.*[A-Z])(?=.*\\d).{8,}$");
+        	"^(?=.*[a-z])(?=.*[A-Z])(?=.*\\d).{8,64}$");
 	}
 
     /**
@@ -114,6 +116,9 @@ public class Validation
         	return false;
 
     	secretQuestion = secretQuestion.trim();
+
+    	if (secretQuestion.isBlank())
+        	return false;
 
     	return secretQuestion.length() >= 10
         	&& secretQuestion.length() <= 100;
@@ -138,10 +143,13 @@ public class Validation
 
     	secretAnswer = secretAnswer.trim();
 
+    	if (secretAnswer.isBlank())
+        	return false;
+
     	return secretAnswer.length() >= 2
         	&& secretAnswer.length() <= 100;
 	}
-
+	
 	/**
      * Checks whether a file name follows the required YYYY.csv pattern.
      *

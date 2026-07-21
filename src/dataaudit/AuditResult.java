@@ -80,9 +80,27 @@ public class AuditResult {
 		System.out.printf("%s transactions (%d):%n", label, transactions.size());
         for (String[] transaction : transactions) {
             System.out.printf("  %s | %s | $%s%n",
-                    transaction[0], transaction[1], transaction[2]);
+                    transaction[0], transaction[1], formatAmount(transaction[2]));
         }
     }
+
+	/**
+	 * Formats a transaction amount string for display, dropping
+	 * unnecessary decimal places from whole-dollar amounts while
+	 * preserving cents (e.g. "301.0" becomes "301", "300.98" stays
+	 * "300.98").
+	 *
+	 * @param amount the amount as a decimal string
+	 * @return the amount formatted for clean display
+	 * @author Syed Karim
+	 */
+	public static String formatAmount(String amount) {
+		double value = Double.parseDouble(amount);
+		if (value == Math.rint(value)) {
+			return String.valueOf((long) value);
+		}
+		return String.format("%.2f", value);
+	}
 
 	/** 
 	 * Returns the list of duplicate transactions found during the audit.

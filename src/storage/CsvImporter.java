@@ -9,6 +9,7 @@ import java.nio.file.Path;
 import java.time.LocalDate;
 import java.time.format.DateTimeFormatter;
 import java.time.format.DateTimeParseException;
+import java.time.format.ResolverStyle;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Set;
@@ -23,7 +24,8 @@ import java.util.regex.Pattern;
 public class CsvImporter {
 
     private static final String EXPECTED_HEADER = "Date,Category,Amount";
-    private static final DateTimeFormatter DATE_FORMAT = DateTimeFormatter.ofPattern("MM/dd/yyyy");
+    private static final DateTimeFormatter DATE_FORMAT =
+        DateTimeFormatter.ofPattern("MM/dd/uuuu").withResolverStyle(ResolverStyle.STRICT);
     private static final int PREVIEW_LINE_LIMIT = 20;
 
     /**
@@ -181,6 +183,11 @@ public class CsvImporter {
      * a non-numeric amount) rather than throwing, so callers can tally invalid
      * rows without a try/catch per line.
      *
+     * @bug Previously {@code Double.parseDouble} accepted the literal
+     * strings "Infinity", "-Infinity", and "NaN" as valid amounts, letting
+     * nonsensical transactions through. Non-finite amounts are now rejected
+     * the same way malformed numbers already were.
+     *
      * @param line the raw CSV line to parse
      * @return the parsed transaction, or {@code null} if the line is malformed
      * @author Ayub
@@ -210,6 +217,10 @@ public class CsvImporter {
         try {
             amount = Double.parseDouble(rawAmount);
         } catch (NumberFormatException e) {
+            return null;
+        }
+
+        if (!Double.isFinite(amount)) {
             return null;
         }
 

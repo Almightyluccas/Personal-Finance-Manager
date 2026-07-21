@@ -1,7 +1,7 @@
 package reports;
 
 import integration.MenuUtil;
-import validation.Validation;
+import java.time.LocalDate;
 
 /**
  * Displays and manages report-related menu options for the Personal Finance
@@ -104,9 +104,8 @@ public class ReportMenu {
             if (year == 0) {
                 return 0;
             }
-            if (year < Validation.MIN_YEAR || year > Validation.MAX_YEAR) {
-                System.out.println("Please enter a year between "
-                        + Validation.MIN_YEAR + " and " + Validation.MAX_YEAR + ".");
+            if (!isValidReportYear(year)) {
+                System.out.println("Please enter a year between 1 and " + getMaximumReportYear() + ".");
                 return 0;
             }
             return year;
@@ -168,5 +167,24 @@ public class ReportMenu {
                     System.out.println("Invalid selection. Please try again.");
             }
         }
+    }
+
+    /**
+     * Checks whether a year is valid for reports.
+     *
+     * @param year the year to validate
+     * @return true when the year is between 1 and the current year
+     */
+    private boolean isValidReportYear(int year) {
+        return year >= 1 && year <= getMaximumReportYear();
+    }
+
+    /**
+     * Returns the current maximum year accepted by reports.
+     *
+     * @return the current calendar year
+     */
+    private int getMaximumReportYear() {
+        return LocalDate.now().getYear();
     }
 }
